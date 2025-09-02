@@ -211,6 +211,8 @@ class TasTransitNextBusSensor(TasTransitSensorBase):
             "scheduled_minutes_until": next_departure.get("scheduledMinutesUntilDeparture"),
             "estimated_minutes_until": next_departure.get("estimatedMinutesUntilDeparture"),
             "all_departures": self._get_all_departures_info(),
+            "vehicles": stop_data.get("vehicles", []),
+            "vehicle_tracking_enabled": True,
         })
         
         if estimated_time:
@@ -277,10 +279,20 @@ class TasTransitTimeToDepartureSensor(TasTransitSensorBase):
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         """Return additional state attributes."""
-        return {
+        stop_data = self.stop_data
+        attributes = {
             "stop_id": self.stop_id,
             **self._get_filter_attributes(),
         }
+        
+        # Add vehicle tracking information if available
+        if stop_data:
+            attributes.update({
+                "vehicles": stop_data.get("vehicles", []),
+                "vehicle_tracking_enabled": True,
+            })
+        
+        return attributes
 
 
 
@@ -332,6 +344,8 @@ class TasTransitBusRouteSensor(TasTransitSensorBase):
             "scheduled_minutes_until": next_departure.get("scheduledMinutesUntilDeparture"),
             "estimated_minutes_until": next_departure.get("estimatedMinutesUntilDeparture"),
             "all_departures": self._get_all_departures_info(),
+            "vehicles": stop_data.get("vehicles", []),
+            "vehicle_tracking_enabled": True,
         })
         
         return attributes

@@ -7,10 +7,14 @@ from datetime import datetime
 from typing import Any
 
 import aiohttp
-import async_timeout
 
-from .const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_TIMEOUT
-from .exceptions import TasTransitApiException
+try:
+    from .const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_TIMEOUT
+    from .exceptions import TasTransitApiException
+except ImportError:
+    # For standalone testing
+    from const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_TIMEOUT
+    from exceptions import TasTransitApiException
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,7 +55,7 @@ class TasTransitApi:
         
         try:
             session = await self._get_session()
-            async with async_timeout.timeout(API_TIMEOUT):
+            async with asyncio.timeout(API_TIMEOUT):
                 async with session.get(stop_url) as response:
                     response.raise_for_status()
                     data = await response.json()
@@ -85,7 +89,7 @@ class TasTransitApi:
 
         try:
             session = await self._get_session()
-            async with async_timeout.timeout(API_TIMEOUT):
+            async with asyncio.timeout(API_TIMEOUT):
                 async with session.get(API_STOPS_SEARCH, params=params) as response:
                     response.raise_for_status()
                     data = await response.json()
@@ -110,7 +114,7 @@ class TasTransitApi:
         
         try:
             session = await self._get_session()
-            async with async_timeout.timeout(API_TIMEOUT):
+            async with asyncio.timeout(API_TIMEOUT):
                 async with session.get(departure_url) as response:
                     response.raise_for_status()
                     data = await response.json()

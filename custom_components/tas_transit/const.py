@@ -30,6 +30,15 @@ SENSOR_BUS_ROUTE: Final = "bus_route"
 # Web URLs
 TRANSPORT_WEB_URL: Final = "https://real-time.transport.tas.gov.au/timetable/#?stop="
 
+# WebSocket Configuration
+WEBSOCKET_URL: Final = "wss://real-time.transport.tas.gov.au/timetable/websocket/all?map"
+WEBSOCKET_TIMEOUT: Final = 30
+WEBSOCKET_HEARTBEAT: Final = 60
+
+# Vehicle Tracking
+VEHICLE_INACTIVE_TIMEOUT: Final = 600  # 10 minutes in seconds
+VEHICLE_CLEANUP_INTERVAL: Final = 300  # 5 minutes in seconds
+
 # Filter Configuration
 FILTER_MODE_INCLUDE: Final = "include"
 FILTER_MODE_EXCLUDE: Final = "exclude"

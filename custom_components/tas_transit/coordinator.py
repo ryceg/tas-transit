@@ -1,9 +1,10 @@
 """Data update coordinator for Tasmanian Transport integration."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, Callable
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -22,6 +23,8 @@ from .const import (
     UPDATE_INTERVAL_FREQUENT,
     UPDATE_INTERVAL_THRESHOLD,
 )
+from .vehicle import Vehicle, VehicleManager
+from .websocket_client import TasTransitWebSocketClient
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,10 +50,21 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         self.config_entry = config_entry
         self.api = TasTransitApi()
         self._current_interval = UPDATE_INTERVAL_DEFAULT
+        
+        # WebSocket and vehicle tracking
+        self.vehicle_manager = VehicleManager()
+        self.websocket_client = TasTransitWebSocketClient(self._handle_vehicle_update)
+        self._vehicle_entity_callback: Callable[[list[Vehicle]], None] | None = None
+        self._tracked_vehicle_entities: set[str] = set()
+        self._websocket_started = False
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API endpoint."""
         try:
+            # Start WebSocket client if not already started
+            if not self._websocket_started:
+                await self._start_websocket_client()
+            
             stops_data = {}
             min_time_to_departure = None
             
@@ -63,9 +77,14 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                 
                 # Process the departures data for this stop with filters
                 processed_data = self._process_departures(departures, stop_config)
+                
+                # Add vehicle tracking data to processed data
+                processed_data["vehicles"] = self._get_vehicles_for_stop(stop_id, processed_data.get("departures", []))
+                
                 stops_data[stop_id] = processed_data
-                _LOGGER.debug("Processed data for stop %s: next_departure=%s, time_to_departure=%s", 
-                             stop_id, processed_data.get("next_departure") is not None, processed_data.get("time_to_departure"))
+                _LOGGER.debug("Processed data for stop %s: next_departure=%s, time_to_departure=%s, vehicles=%d", 
+                             stop_id, processed_data.get("next_departure") is not None, processed_data.get("time_to_departure"),
+                             len(processed_data.get("vehicles", [])))
                 
                 # Track the earliest departure across all stops
                 time_to_departure = processed_data.get("time_to_departure")
@@ -75,6 +94,9 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
             
             # Schedule next update based on closest departure
             await self._schedule_next_update(min_time_to_departure)
+            
+            # Update vehicle entity tracking
+            await self._update_vehicle_entities()
             
             return stops_data
 
@@ -265,6 +287,84 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
             self.update_interval = timedelta(seconds=interval)
             self.logger.debug("Updated coordinator interval to %d seconds", interval)
     
+    async def _start_websocket_client(self) -> None:
+        """Start the WebSocket client and subscribe to configured stops."""
+        _LOGGER.info("Starting WebSocket client for real-time vehicle tracking")
+        
+        # Start the WebSocket client
+        await self.websocket_client.start()
+        
+        # Subscribe to all configured stops
+        for stop_config in self.config_entry.data[CONF_STOPS]:
+            stop_id = stop_config[CONF_STOP_ID]
+            await self.websocket_client.subscribe_to_stop(stop_id)
+            _LOGGER.debug("Subscribed to WebSocket updates for stop %s", stop_id)
+        
+        self._websocket_started = True
+
+    def _handle_vehicle_update(self, vehicle_data: dict[str, Any]) -> None:
+        """Handle vehicle update from WebSocket."""
+        vehicle = self.vehicle_manager.update_vehicle(vehicle_data)
+        if vehicle:
+            # Trigger coordinator update to notify entities
+            self.async_set_updated_data(self.data)
+            _LOGGER.debug("Updated vehicle %s from WebSocket", vehicle.vehicle_id)
+
+    def _get_vehicles_for_stop(self, stop_id: str, departures: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Get vehicle tracking data for departures at a stop."""
+        vehicles = []
+        
+        # Match vehicles to departures based on trip_id
+        trip_ids = {dep.get("tripId") for dep in departures if dep.get("tripId")}
+        
+        for vehicle in self.vehicle_manager.get_active_vehicles():
+            if vehicle.trip_id in trip_ids:
+                vehicles.append({
+                    "vehicle_id": vehicle.vehicle_id,
+                    "trip_id": vehicle.trip_id,
+                    "line_number": vehicle.line_number,
+                    "location": vehicle.location.to_dict() if vehicle.location else None,
+                    "last_updated": vehicle.last_updated.isoformat(),
+                })
+        
+        return vehicles
+
+    def set_vehicle_entity_callback(self, callback: Callable[[list[Vehicle]], None]) -> None:
+        """Set callback for adding new vehicle entities."""
+        self._vehicle_entity_callback = callback
+
+    async def _update_vehicle_entities(self) -> None:
+        """Update vehicle tracker entities based on active vehicles."""
+        if self._vehicle_entity_callback is None:
+            return
+        
+        active_vehicles = self.vehicle_manager.get_active_vehicles()
+        new_vehicles = []
+        
+        for vehicle in active_vehicles:
+            if vehicle.vehicle_id not in self._tracked_vehicle_entities:
+                new_vehicles.append(vehicle)
+                self._tracked_vehicle_entities.add(vehicle.vehicle_id)
+        
+        if new_vehicles:
+            _LOGGER.debug("Adding %d new vehicle entities", len(new_vehicles))
+            self._vehicle_entity_callback(new_vehicles)
+        
+        # Clean up entities for vehicles that no longer exist
+        all_vehicle_ids = {v.vehicle_id for v in self.vehicle_manager.get_all_vehicles().values()}
+        removed_vehicles = self._tracked_vehicle_entities - all_vehicle_ids
+        
+        if removed_vehicles:
+            _LOGGER.debug("Cleaning up %d removed vehicle entities", len(removed_vehicles))
+            self._tracked_vehicle_entities -= removed_vehicles
+
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator."""
+        _LOGGER.info("Shutting down Tasmanian Transport coordinator")
+        
+        # Stop WebSocket client
+        if hasattr(self, 'websocket_client'):
+            await self.websocket_client.disconnect()
+        
+        # Close API session
         await self.api.close()

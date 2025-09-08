@@ -96,6 +96,7 @@ class TasTransitSensorBase(CoordinatorEntity, SensorEntity):
                 return stop_config
         return None
     
+
     def _get_filter_attributes(self) -> dict[str, Any]:
         """Get filter-related attributes."""
         stop_config = self.stop_config
@@ -146,7 +147,23 @@ class TasTransitNextBusSensor(TasTransitSensorBase):
         """Initialize the next bus sensor."""
         super().__init__(coordinator, config_entry, stop_id, stop_name, SENSOR_NEXT_BUS)
         self._attr_name = f"{stop_name} Next Bus Departure"
-        self._attr_icon = "mdi:bus"
+        self._attr_icon = "mdi:bus-stop"
+
+    @property
+    def latitude(self) -> float | None:
+        """Return latitude of the bus stop."""
+        stop_data = self.stop_data
+        if stop_data and stop_data.get("stop_location"):
+            return stop_data["stop_location"].get("latitude")
+        return None
+
+    @property
+    def longitude(self) -> float | None:
+        """Return longitude of the bus stop."""
+        stop_data = self.stop_data
+        if stop_data and stop_data.get("stop_location"):
+            return stop_data["stop_location"].get("longitude")
+        return None
 
     @property
     def native_value(self) -> str:
@@ -193,6 +210,18 @@ class TasTransitNextBusSensor(TasTransitSensorBase):
             "stop_id": self.stop_id,
             **self._get_filter_attributes(),
         }
+        
+        # Add location information if available
+        if stop_data and stop_data.get("stop_location"):
+            location_data = stop_data["stop_location"]
+            attributes.update({
+                "stop_code": location_data.get("code", ""),
+                "stop_zone": location_data.get("zone", ""),
+                "stop_platform_code": location_data.get("platform_code", ""),
+                "parent_station": location_data.get("parent_station", ""),
+                "latitude": location_data.get("latitude"),
+                "longitude": location_data.get("longitude"),
+            })
         
         if not stop_data or not stop_data.get("next_departure"):
             return attributes
@@ -285,6 +314,18 @@ class TasTransitTimeToDepartureSensor(TasTransitSensorBase):
             **self._get_filter_attributes(),
         }
         
+        # Add location information if available
+        if stop_data and stop_data.get("stop_location"):
+            location_data = stop_data["stop_location"]
+            attributes.update({
+                "stop_code": location_data.get("code", ""),
+                "stop_zone": location_data.get("zone", ""),
+                "stop_platform_code": location_data.get("platform_code", ""),
+                "parent_station": location_data.get("parent_station", ""),
+                "latitude": location_data.get("latitude"),
+                "longitude": location_data.get("longitude"),
+            })
+        
         # Add vehicle tracking information if available
         if stop_data:
             attributes.update({
@@ -331,6 +372,18 @@ class TasTransitBusRouteSensor(TasTransitSensorBase):
             "stop_id": self.stop_id,
             **self._get_filter_attributes(),
         }
+        
+        # Add location information if available
+        if stop_data and stop_data.get("stop_location"):
+            location_data = stop_data["stop_location"]
+            attributes.update({
+                "stop_code": location_data.get("code", ""),
+                "stop_zone": location_data.get("zone", ""),
+                "stop_platform_code": location_data.get("platform_code", ""),
+                "parent_station": location_data.get("parent_station", ""),
+                "latitude": location_data.get("latitude"),
+                "longitude": location_data.get("longitude"),
+            })
         
         if not stop_data or not stop_data.get("next_departure"):
             return attributes

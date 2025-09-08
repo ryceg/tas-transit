@@ -81,10 +81,15 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                 # Add vehicle tracking data to processed data
                 processed_data["vehicles"] = self._get_vehicles_for_stop(stop_id, processed_data.get("departures", []))
                 
+                # Fetch stop location data from currentstopschedule API
+                stop_location_data = await self._get_stop_location(stop_id)
+                if stop_location_data:
+                    processed_data["stop_location"] = stop_location_data
+                
                 stops_data[stop_id] = processed_data
-                _LOGGER.debug("Processed data for stop %s: next_departure=%s, time_to_departure=%s, vehicles=%d", 
+                _LOGGER.debug("Processed data for stop %s: next_departure=%s, time_to_departure=%s, vehicles=%d, has_location=%s", 
                              stop_id, processed_data.get("next_departure") is not None, processed_data.get("time_to_departure"),
-                             len(processed_data.get("vehicles", [])))
+                             len(processed_data.get("vehicles", [])), processed_data.get("stop_location") is not None)
                 
                 # Track the earliest departure across all stops
                 time_to_departure = processed_data.get("time_to_departure")
@@ -328,6 +333,38 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                 })
         
         return vehicles
+
+    async def _get_stop_location(self, stop_id: str) -> dict[str, Any] | None:
+        """Get stop location data from currentstopschedule API."""
+        try:
+            _LOGGER.debug("Fetching stop location for stop %s", stop_id)
+            schedule_data = await self.api.get_stop_schedule(stop_id)
+            
+            if schedule_data and "stop" in schedule_data:
+                stop_info = schedule_data["stop"]
+                location = stop_info.get("location")
+                
+                if location and "latitude" in location and "longitude" in location:
+                    return {
+                        "stop_id": stop_info.get("id", stop_id),
+                        "name": stop_info.get("name", "Unknown Stop"),
+                        "code": stop_info.get("code", ""),
+                        "latitude": location["latitude"],
+                        "longitude": location["longitude"],
+                        "zone": stop_info.get("zone", ""),
+                        "platform_code": stop_info.get("platformCode", ""),
+                        "parent_station": stop_info.get("parentStation", ""),
+                    }
+            
+            _LOGGER.warning("No location data found for stop %s", stop_id)
+            return None
+            
+        except TasTransitApiError as err:
+            _LOGGER.error("Error fetching stop location for %s: %s", stop_id, err)
+            return None
+        except Exception as err:
+            _LOGGER.error("Unexpected error fetching stop location for %s: %s", stop_id, err)
+            return None
 
     def set_vehicle_entity_callback(self, callback: Callable[[list[Vehicle]], None]) -> None:
         """Set callback for adding new vehicle entities."""

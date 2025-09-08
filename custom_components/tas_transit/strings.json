@@ -23,7 +23,7 @@
       },
       "filters": {
         "title": "Configure Filters (Optional)",
-        "description": "Filter departures to show only specific bus routes or destinations. This is optional - leave blank to show all departures from {stop_name}.\n\n**Examples:**\n- Route filters: X58,457,401\n- Destination filters: Mount Nelson,University,Sandy Bay\n\n{examples}",
+        "description": "Filter departures to show only specific bus routes or destinations for {stop_name}.\n\n**Available at this stop:**\n- {route_info}\n- {dest_info}\n\nSelect the routes or destinations you want to track, or leave empty to show all departures.",
         "data": {
           "line_filters": "Route Numbers",
           "destination_filters": "Destination Filters",
@@ -39,15 +39,47 @@
     "error": {
       "stop_not_found": "Stop ID not found. Please check the ID and try again.",
       "unknown": "An unexpected error occurred. Please try again."
+    },
+    "abort": {
+      "already_configured": "Tasmanian Transport is already configured. To add more stops, go to the integration settings and click 'Configure'."
     }
   },
   "options": {
     "step": {
       "init": {
+        "title": "Configure Tasmanian Transport",
+        "menu_options": {
+          "add_stop": "Add Another Stop"
+        }
+      },
+      "add_stop": {
+        "title": "Add Another Bus Stop",
+        "description": "Add another bus stop to track multiple routes.\n\n**About Stop IDs:**\nStop IDs consist of your postcode followed by three digits (e.g., 7109023 for postcode 7109).\n\n**To find your stop ID:**\n1. Visit the [Tasmanian Transport website]({transport_site_url})\n2. Search for your bus stop\n3. Copy the ID from the URL\n\n**Example:** For stop 7109023, you'll see it in the URL like: .../#?stop=7109023",
         "data": {
+          "stop_id": "Stop ID"
+        },
+        "data_description": {
+          "stop_id": "Your postcode + 3 digits (e.g., 7109023 for postcode 7109)"
+        }
+      },
+      "filters": {
+        "title": "Configure Filters (Optional)",
+        "description": "Filter departures to show only specific bus routes or destinations for {stop_name}.\n\n**Available at this stop:**\n- {route_info}\n- {dest_info}\n\nSelect the routes or destinations you want to track, or leave empty to show all departures.",
+        "data": {
+          "line_filters": "Route Numbers",
+          "destination_filters": "Destination Filters",
           "filter_mode": "Filter Type"
+        },
+        "data_description": {
+          "line_filters": "Select specific bus route numbers to track",
+          "destination_filters": "Select specific destinations to track",
+          "filter_mode": "Show only matching routes/destinations (Include) or hide matching ones (Exclude)"
         }
       }
+    },
+    "error": {
+      "stop_not_found": "Stop ID not found. Please check the ID and try again.",
+      "unknown": "An unexpected error occurred. Please try again."
     }
   },
   "selector": {

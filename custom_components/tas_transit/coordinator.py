@@ -356,6 +356,14 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         
         if removed_vehicles:
             _LOGGER.debug("Cleaning up %d removed vehicle entities", len(removed_vehicles))
+            # Remove entities from Home Assistant
+            if hasattr(self, '_device_tracker_entities'):
+                for vehicle_id in removed_vehicles:
+                    entity = self._device_tracker_entities.get(vehicle_id)
+                    if entity:
+                        entity.mark_for_removal()
+                        self._device_tracker_entities.pop(vehicle_id, None)
+            
             self._tracked_vehicle_entities -= removed_vehicles
 
     async def async_shutdown(self) -> None:

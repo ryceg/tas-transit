@@ -11,7 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN
-from .coordinator import TasTransitDataUpdateCoordinator  
+from .coordinator import TasTransitDataUpdateCoordinator
 from .vehicle import Vehicle
 
 _LOGGER = logging.getLogger(__name__)
@@ -24,11 +24,14 @@ async def async_setup_entry(
 ) -> None:
     """Set up device tracker platform for bus vehicles."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
-    
+
+    # Track active entities for removal
+    coordinator._device_tracker_entities = {}
+
     # The coordinator will handle adding/removing vehicle trackers dynamically
     # Initial setup creates no entities - they are created when vehicles appear
     _LOGGER.debug("Device tracker platform initialized for entry %s", config_entry.entry_id)
-    
+
     # Store the callback for adding new vehicle entities
     coordinator.set_vehicle_entity_callback(
         lambda vehicles: _async_add_vehicle_entities(async_add_entities, coordinator, config_entry, vehicles)
@@ -43,7 +46,7 @@ def _async_add_vehicle_entities(
 ) -> None:
     """Add new vehicle tracker entities."""
     entities = []
-    
+
     for vehicle in vehicles:
         entity = TasTransitVehicleTracker(
             coordinator=coordinator,
@@ -51,8 +54,10 @@ def _async_add_vehicle_entities(
             vehicle_id=vehicle.vehicle_id,
         )
         entities.append(entity)
+        # Track the entity for potential removal
+        coordinator._device_tracker_entities[vehicle.vehicle_id] = entity
         _LOGGER.debug("Adding vehicle tracker for %s", vehicle.vehicle_id)
-    
+
     if entities:
         async_add_entities(entities)
 
@@ -68,12 +73,22 @@ class TasTransitVehicleTracker(CoordinatorEntity, TrackerEntity):
     ) -> None:
         """Initialize the vehicle tracker."""
         super().__init__(coordinator)
-        
+
         self._config_entry = config_entry
         self._vehicle_id = vehicle_id
-        self._attr_unique_id = f"{config_entry.entry_id}_vehicle_{vehicle_id}"
+
+        # Create a more unique ID by including trip and route information
+        vehicle = self._get_vehicle_initial()
+        route_suffix = ""
+        if vehicle and vehicle.line_number:
+            route_suffix = f"_route_{vehicle.line_number}"
+        if vehicle and vehicle.trip_id:
+            # Use first 8 chars of trip_id for uniqueness without making ID too long
+            route_suffix += f"_{vehicle.trip_id[:8]}"
+
+        self._attr_unique_id = f"{config_entry.entry_id}_vehicle_{vehicle_id}{route_suffix}"
         self._attr_should_poll = False
-        
+
         # Set up device info
         self._attr_device_info = {
             "identifiers": {(DOMAIN, f"vehicle_{vehicle_id}")},
@@ -128,8 +143,8 @@ class TasTransitVehicleTracker(CoordinatorEntity, TrackerEntity):
         """Return if the vehicle is available (active and has location)."""
         vehicle = self._get_vehicle()
         return (
-            vehicle is not None 
-            and vehicle.is_active 
+            vehicle is not None
+            and vehicle.is_active
             and vehicle.location is not None
         )
 
@@ -154,14 +169,14 @@ class TasTransitVehicleTracker(CoordinatorEntity, TrackerEntity):
             attrs["route"] = vehicle.line_number  # Alternative name for route
         if vehicle.trip_template_id:
             attrs["trip_template_id"] = vehicle.trip_template_id
-        
+
         # Add location attributes
         if vehicle.location:
             attrs.update({
                 "heading": vehicle.location.heading,
                 "gps_accuracy": self.location_accuracy,
             })
-            
+
             # Add bearing/direction text if heading is available
             if vehicle.location.heading is not None:
                 attrs["direction"] = self._heading_to_direction(vehicle.location.heading)
@@ -173,6 +188,14 @@ class TasTransitVehicleTracker(CoordinatorEntity, TrackerEntity):
         if not hasattr(self.coordinator, 'vehicle_manager'):
             return None
         return self.coordinator.vehicle_manager.get_vehicle(self._vehicle_id)
+
+    def _get_vehicle_initial(self) -> Vehicle | None:
+        """Get the vehicle data during initialization (may return None if coordinator not ready)."""
+        try:
+            return self._get_vehicle()
+        except (AttributeError, KeyError):
+            # During initialization, coordinator may not be fully set up yet
+            return None
 
     def _heading_to_direction(self, heading: float) -> str:
         """Convert heading degrees to cardinal direction."""
@@ -193,12 +216,12 @@ class TasTransitVehicleTracker(CoordinatorEntity, TrackerEntity):
             # This will be handled by the coordinator's entity management
             _LOGGER.debug("Vehicle %s no longer exists", self._vehicle_id)
             return
-            
+
         if not vehicle.is_active:
             # Vehicle is no longer active, but we keep the entity for a while
             # in case it becomes active again
-            _LOGGER.debug("Vehicle %s is no longer active", self._vehicle_id) 
-            
+            _LOGGER.debug("Vehicle %s is no longer active", self._vehicle_id)
+
         self.async_write_ha_state()
 
     async def async_added_to_hass(self) -> None:
@@ -209,4 +232,18 @@ class TasTransitVehicleTracker(CoordinatorEntity, TrackerEntity):
     async def async_will_remove_from_hass(self) -> None:
         """When entity will be removed from hass."""
         await super().async_will_remove_from_hass()
+
+        # Clean up entity reference in coordinator
+        if hasattr(self.coordinator, '_device_tracker_entities'):
+            self.coordinator._device_tracker_entities.pop(self._vehicle_id, None)
+
         _LOGGER.info("Removed vehicle tracker for %s", self._vehicle_id)
+
+    def mark_for_removal(self) -> None:
+        """Mark this entity for removal from Home Assistant."""
+        self.async_schedule_update_ha_state()
+        # Schedule entity removal
+        self.hass.async_create_task(self.async_remove())
+
+
+

@@ -7,6 +7,7 @@ DOMAIN: Final = "tas_transit"
 API_BASE_URL: Final = "https://real-time.transport.tas.gov.au/timetable/rest"
 API_STOPS_SEARCH: Final = f"{API_BASE_URL}/stops/searchbylocation"
 API_STOPDISPLAYS: Final = f"{API_BASE_URL}/stopdisplays"
+API_STOPSCHEDULE: Final = f"{API_BASE_URL}/currentstopschedule"
 API_TIMEOUT: Final = 30
 
 # Update Intervals

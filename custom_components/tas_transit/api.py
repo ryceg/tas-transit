@@ -9,11 +9,11 @@ from typing import Any
 import aiohttp
 
 try:
-    from .const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_TIMEOUT
+    from .const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_STOPSCHEDULE, API_TIMEOUT
     from .exceptions import TasTransitApiException
 except ImportError:
     # For standalone testing
-    from const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_TIMEOUT
+    from const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_STOPSCHEDULE, API_TIMEOUT
     from exceptions import TasTransitApiException
 
 _LOGGER = logging.getLogger(__name__)
@@ -201,3 +201,35 @@ class TasTransitApi:
         except Exception as err:
             _LOGGER.warning("Error parsing time value '%s': %s", time_value, err)
             return None
+
+    async def get_stop_schedule(self, stop_id: str) -> dict[str, Any] | None:
+        """Get full day schedule for a stop to extract filter options.
+        
+        Args:
+            stop_id: The stop ID to fetch schedule for
+            
+        Returns:
+            Full schedule data or None if request fails
+        """
+        schedule_url = f"{API_STOPSCHEDULE}/{stop_id}"
+        _LOGGER.debug("Fetching stop schedule from: %s", schedule_url)
+        
+        try:
+            session = await self._get_session()
+            async with asyncio.timeout(API_TIMEOUT):
+                async with session.get(schedule_url) as response:
+                    response.raise_for_status()
+                    data = await response.json()
+                    
+                    _LOGGER.debug("Received schedule data for stop %s", stop_id)
+                    return data
+                    
+        except asyncio.TimeoutError as err:
+            _LOGGER.error("Timeout fetching schedule for stop %s: %s", stop_id, err)
+            raise TasTransitApiTimeoutError(f"Timeout fetching schedule for stop {stop_id}") from err
+        except aiohttp.ClientError as err:
+            _LOGGER.error("HTTP error fetching schedule for stop %s: %s", stop_id, err)
+            raise TasTransitApiConnectionError(f"Connection error fetching schedule for stop {stop_id}") from err
+        except Exception as err:
+            _LOGGER.error("Unexpected error fetching schedule for stop %s: %s", stop_id, err)
+            raise TasTransitApiError(f"Error fetching schedule for stop {stop_id}") from err

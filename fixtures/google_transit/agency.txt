@@ -1,0 +1,6 @@
+agency_id,agency_name,agency_url,agency_timezone,agency_lang,agency_phone
+MTS,Metro Tasmania,http://www.metrotas.com.au,Australia/Sydney,en,13 22 01
+TL,Tassielink,http://www.tassielink.com.au,Australia/Sydney,en,1300 300 520
+DVC,Derwent Valley Link,http://derwentvalleylink.com.au,Australia/Sydney,en,6261 4653
+RDL,Redline Coaches,http://www.tasredline.com.au,Australia/Sydney,en,1300 360 000
+DFS,Derwent Ferries,https://derwentferries.com.au,Australia/Sydney,en,6240 1893

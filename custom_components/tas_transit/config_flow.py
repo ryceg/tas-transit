@@ -255,7 +255,7 @@ class OptionsFlow(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
+        super().__init__()
         self._stop_id: str | None = None
         self._stop_name: str | None = None
         self._available_routes: list[str] = []
@@ -357,7 +357,7 @@ class OptionsFlow(config_entries.OptionsFlow):
                 stop_config[CONF_FILTER_MODE] = filter_mode
 
             # Add stop to existing configuration
-            new_data = dict(self.config_entry.data)
+            new_data = dict(self._config_entry.data)
             new_data[CONF_STOPS].append(stop_config)
 
             return self.async_create_entry(

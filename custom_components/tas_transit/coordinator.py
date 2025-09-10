@@ -25,6 +25,8 @@ from .const import (
 )
 from .vehicle import Vehicle, VehicleManager
 from .websocket_client import TasTransitWebSocketClient
+from .gtfs_manager import GTFSManager
+from .shapes import RouteShapeManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,10 +61,19 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         self._tracked_vehicle_entities: set[str] = set()
         self._tracked_vehicle_sensors: set[str] = set()
         self._websocket_started = False
+        
+        # GTFS data management
+        self.gtfs_manager = GTFSManager(hass.config.config_dir)
+        self.route_shape_manager = RouteShapeManager(self.gtfs_manager)
+        self._gtfs_initialized = False
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API endpoint."""
         try:
+            # Initialize GTFS data if not already done
+            if not self._gtfs_initialized:
+                await self._initialize_gtfs_data()
+            
             # Start WebSocket client if not already started
             if not self._websocket_started:
                 await self._start_websocket_client()
@@ -77,8 +88,11 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                 departures = await self.api.get_stop_departures(stop_id)
                 _LOGGER.debug("Received %d departures for stop %s", len(departures), stop_id)
                 
+                # Enrich departures with GTFS data
+                enriched_departures = self._enrich_departures_with_gtfs(departures)
+                
                 # Process the departures data for this stop with filters
-                processed_data = self._process_departures(departures, stop_config)
+                processed_data = self._process_departures(enriched_departures, stop_config)
                 
                 # Add vehicle tracking data to processed data
                 processed_data["vehicles"] = self._get_vehicles_for_stop(stop_id, processed_data.get("departures", []))
@@ -169,10 +183,8 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         line_number_lower = line_number.lower()
         for filter_line in line_filters:
             filter_line_lower = filter_line.strip().lower()
-            # Exact match or partial match (e.g., "58" matches "X58")
-            if (line_number_lower == filter_line_lower or 
-                filter_line_lower in line_number_lower or
-                line_number_lower in filter_line_lower):
+            # Exact match only (case insensitive)
+            if line_number_lower == filter_line_lower:
                 return True
         return False
 
@@ -309,6 +321,71 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         
         self._websocket_started = True
 
+    async def _initialize_gtfs_data(self) -> None:
+        """Initialize GTFS data manager."""
+        try:
+            _LOGGER.info("Initializing GTFS data manager")
+            success = await self.gtfs_manager.initialize()
+            if success:
+                _LOGGER.info("GTFS data initialized successfully")
+                self._gtfs_initialized = True
+            else:
+                _LOGGER.warning("GTFS data initialization failed - continuing without GTFS features")
+                self._gtfs_initialized = False
+        except Exception as err:
+            _LOGGER.error("Error initializing GTFS data: %s", err)
+            self._gtfs_initialized = False
+
+    def _enrich_departures_with_gtfs(self, departures: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Enrich departure data with GTFS information.
+        
+        Args:
+            departures: List of departure data from real-time API
+            
+        Returns:
+            List of enriched departure data with GTFS fields
+        """
+        if not self.gtfs_manager.is_data_available:
+            return departures
+        
+        enriched_departures = []
+        for departure in departures:
+            enriched = self.gtfs_manager.enrich_departure_data(departure)
+            enriched_departures.append(enriched)
+        
+        return enriched_departures
+
+    def get_active_route_shapes(self) -> dict[str, dict[str, Any]]:
+        """Get route shape data for active trips.
+        
+        Returns:
+            Dict mapping shape_id to route visualization data
+        """
+        if not self.gtfs_manager.is_data_available:
+            return {}
+        
+        # Get all active trip IDs
+        active_trip_ids = []
+        
+        # From current departures data
+        if hasattr(self, 'data') and self.data:
+            for stop_data in self.data.values():
+                departures = stop_data.get("departures", [])
+                for departure in departures:
+                    trip_id = departure.get("tripId")
+                    if trip_id:
+                        active_trip_ids.append(trip_id)
+        
+        # From active vehicles
+        for vehicle in self.vehicle_manager.get_active_vehicles():
+            if vehicle.trip_id:
+                active_trip_ids.append(vehicle.trip_id)
+        
+        # Remove duplicates
+        active_trip_ids = list(set(active_trip_ids))
+        
+        return self.route_shape_manager.get_active_route_shapes(active_trip_ids)
+
     def _handle_vehicle_update(self, vehicle_data: dict[str, Any]) -> None:
         """Handle vehicle update from WebSocket."""
         vehicle = self.vehicle_manager.update_vehicle(vehicle_data)
@@ -436,6 +513,10 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         # Stop WebSocket client
         if hasattr(self, 'websocket_client'):
             await self.websocket_client.disconnect()
+        
+        # Close GTFS manager session
+        if hasattr(self, 'gtfs_manager'):
+            await self.gtfs_manager.close()
         
         # Close API session
         await self.api.close()

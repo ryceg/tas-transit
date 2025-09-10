@@ -43,3 +43,9 @@ VEHICLE_CLEANUP_INTERVAL: Final = 300  # 5 minutes in seconds
 # Filter Configuration
 FILTER_MODE_INCLUDE: Final = "include"
 FILTER_MODE_EXCLUDE: Final = "exclude"
+
+# GTFS Configuration
+GTFS_HOBART_URL: Final = "http://www.metrotas.com.au/wp-content/uploads/transit/Hobart/google_transit.zip"
+GTFS_CACHE_DIR: Final = "gtfs_cache"
+GTFS_REFRESH_INTERVAL: Final = 86400  # 24 hours in seconds
+GTFS_DOWNLOAD_TIMEOUT: Final = 300  # 5 minutes for GTFS download

@@ -107,9 +107,10 @@ class TasTransitSensorBase(CoordinatorEntity, SensorEntity):
         self._attr_unique_id = f"{config_entry.entry_id}_{stop_id}_{sensor_type}"
         self._attr_device_info = {
             "identifiers": {(DOMAIN, f"{config_entry.entry_id}_{stop_id}")},
-            "name": f"Tasmanian Transport - {stop_name}",
+            "name": f"{stop_name}",
             "manufacturer": "Tasmanian Government",
-            "model": "Real-time Transport",
+            "model": "Bus Stop",
+            "suggested_area": "Transport",
         }
     
     @property
@@ -398,6 +399,24 @@ class TasTransitTimeToNextBusSensor(TasTransitSensorBase):
                 "scheduled_minutes_until": next_departure.get("scheduledMinutesUntilDeparture"),
                 "estimated_minutes_until": next_departure.get("estimatedMinutesUntilDeparture"),
             })
+            
+            # Add GTFS-sourced attributes if available
+            if next_departure.get("wheelchair_accessible") is not None:
+                attributes["wheelchair_accessible"] = next_departure.get("wheelchair_accessible")
+                attributes["wheelchair_accessible_text"] = next_departure.get("wheelchair_accessible_text", "")
+            
+            if next_departure.get("trip_headsign"):
+                attributes["trip_headsign"] = next_departure.get("trip_headsign")
+            
+            if next_departure.get("route_color"):
+                attributes["route_color"] = next_departure.get("route_color")
+                attributes["route_text_color"] = next_departure.get("route_text_color", "")
+            
+            if next_departure.get("route_long_name"):
+                attributes["route_long_name"] = next_departure.get("route_long_name")
+            
+            if next_departure.get("shape_id"):
+                attributes["shape_id"] = next_departure.get("shape_id")
         
         # Add vehicle tracking information if available
         if stop_data:
@@ -405,6 +424,16 @@ class TasTransitTimeToNextBusSensor(TasTransitSensorBase):
                 "vehicles": stop_data.get("vehicles", []),
                 "vehicle_tracking_enabled": True,
             })
+        
+        # Add route visualization data if available
+        if hasattr(self.coordinator, 'get_active_route_shapes'):
+            try:
+                route_shapes = self.coordinator.get_active_route_shapes()
+                if route_shapes:
+                    attributes["route_shapes"] = route_shapes
+            except Exception as err:
+                # Don't fail sensor update if route shapes can't be loaded
+                _LOGGER.debug("Could not load route shapes: %s", err)
         
         return attributes
 

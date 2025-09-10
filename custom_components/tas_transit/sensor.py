@@ -23,11 +23,9 @@ from .const import (
     CONF_STOP_NAME,
     CONF_STOPS,
     DOMAIN,
-    SENSOR_BUS_ROUTE,
-    SENSOR_NEXT_BUS,
-    SENSOR_TIME_TO_DEPARTURE,
 )
 from .coordinator import TasTransitDataUpdateCoordinator
+from .vehicle_sensors import TasTransitVehicleLineNumberSensor, TasTransitVehicleRealtimeStatusSensor
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -48,12 +46,45 @@ async def async_setup_entry(
         stop_name = stop_config[CONF_STOP_NAME]
         
         sensors.extend([
-            TasTransitNextBusSensor(coordinator, config_entry, stop_id, stop_name),
-            TasTransitTimeToDepartureSensor(coordinator, config_entry, stop_id, stop_name),
-            TasTransitBusRouteSensor(coordinator, config_entry, stop_id, stop_name),
+            TasTransitNextRouteSensor(coordinator, config_entry, stop_id, stop_name),
+            TasTransitNextDestinationSensor(coordinator, config_entry, stop_id, stop_name),
+            TasTransitTimeToNextBusSensor(coordinator, config_entry, stop_id, stop_name),
         ])
     
     async_add_entities(sensors)
+    
+    # Set up vehicle sensor callback for dynamic vehicle sensor creation
+    coordinator.set_vehicle_sensor_callback(
+        lambda vehicles: _async_add_vehicle_sensors(async_add_entities, coordinator, config_entry, vehicles)
+    )
+
+
+def _async_add_vehicle_sensors(
+    async_add_entities: AddEntitiesCallback,
+    coordinator: TasTransitDataUpdateCoordinator,
+    config_entry: ConfigEntry,
+    vehicles: list[Vehicle],
+) -> None:
+    """Add new vehicle sensor entities."""
+    entities = []
+
+    for vehicle in vehicles:
+        entities.extend([
+            TasTransitVehicleLineNumberSensor(
+                coordinator=coordinator,
+                config_entry=config_entry,
+                vehicle_id=vehicle.vehicle_id,
+            ),
+            TasTransitVehicleRealtimeStatusSensor(
+                coordinator=coordinator,
+                config_entry=config_entry,
+                vehicle_id=vehicle.vehicle_id,
+            ),
+        ])
+        _LOGGER.debug("Adding vehicle sensors for %s", vehicle.vehicle_id)
+
+    if entities:
+        async_add_entities(entities)
 
 
 class TasTransitSensorBase(CoordinatorEntity, SensorEntity):
@@ -134,8 +165,8 @@ class TasTransitSensorBase(CoordinatorEntity, SensorEntity):
         return attributes
 
 
-class TasTransitNextBusSensor(TasTransitSensorBase):
-    """Sensor for the next bus departure."""
+class TasTransitNextRouteSensor(TasTransitSensorBase):
+    """Sensor for the next bus route (line number)."""
 
     def __init__(
         self,
@@ -144,61 +175,24 @@ class TasTransitNextBusSensor(TasTransitSensorBase):
         stop_id: str,
         stop_name: str,
     ) -> None:
-        """Initialize the next bus sensor."""
-        super().__init__(coordinator, config_entry, stop_id, stop_name, SENSOR_NEXT_BUS)
-        self._attr_name = f"{stop_name} Next Bus Departure"
-        self._attr_icon = "mdi:bus-stop"
+        """Initialize the next route sensor."""
+        super().__init__(coordinator, config_entry, stop_id, stop_name, "next_route")
+        self._attr_name = f"{stop_name} Next Route"
+        self._attr_icon = "mdi:routes"
+
 
     @property
-    def latitude(self) -> float | None:
-        """Return latitude of the bus stop."""
-        stop_data = self.stop_data
-        if stop_data and stop_data.get("stop_location"):
-            return stop_data["stop_location"].get("latitude")
-        return None
-
-    @property
-    def longitude(self) -> float | None:
-        """Return longitude of the bus stop."""
-        stop_data = self.stop_data
-        if stop_data and stop_data.get("stop_location"):
-            return stop_data["stop_location"].get("longitude")
-        return None
-
-    @property
-    def native_value(self) -> str:
-        """Return the next bus departure information."""
+    def native_value(self) -> str | None:
+        """Return the next bus route (line number)."""
         stop_data = self.stop_data
         if not stop_data:
-            _LOGGER.debug("No stop data available for stop %s", self.stop_id)
-            return "No data"
+            return None
             
         if not stop_data.get("next_departure"):
-            _LOGGER.debug("No next departure found for stop %s", self.stop_id)
-            return "No departures"
+            return None
         
         next_departure = stop_data["next_departure"]
-        
-        # Get time information
-        estimated_min = next_departure.get("estimatedMinutesUntilDeparture")
-        scheduled_min = next_departure.get("scheduledMinutesUntilDeparture")
-        
-        minutes_until = estimated_min if estimated_min is not None else scheduled_min
-        
-        if minutes_until is None:
-            _LOGGER.debug("No time information for departure: %s", next_departure)
-            return "Unknown time"
-            
-        # Format the display string
-        line_number = next_departure.get("lineNumber", "Unknown")
-        destination = next_departure.get("destinationName", "Unknown")
-        
-        if minutes_until == 0:
-            return f"Route {line_number} to {destination} - Due now"
-        elif minutes_until == 1:
-            return f"Route {line_number} to {destination} - 1 minute"
-        else:
-            return f"Route {line_number} to {destination} - {minutes_until} minutes"
+        return next_departure.get("lineNumber")
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -211,7 +205,7 @@ class TasTransitNextBusSensor(TasTransitSensorBase):
             **self._get_filter_attributes(),
         }
         
-        # Add location information if available
+        # Add stop information (no GPS coordinates to avoid appearing on map)
         if stop_data and stop_data.get("stop_location"):
             location_data = stop_data["stop_location"]
             attributes.update({
@@ -219,8 +213,6 @@ class TasTransitNextBusSensor(TasTransitSensorBase):
                 "stop_zone": location_data.get("zone", ""),
                 "stop_platform_code": location_data.get("platform_code", ""),
                 "parent_station": location_data.get("parent_station", ""),
-                "latitude": location_data.get("latitude"),
-                "longitude": location_data.get("longitude"),
             })
         
         if not stop_data or not stop_data.get("next_departure"):
@@ -278,8 +270,8 @@ class TasTransitNextBusSensor(TasTransitSensorBase):
 
 
 
-class TasTransitTimeToDepartureSensor(TasTransitSensorBase):
-    """Sensor for time until bus departure."""
+class TasTransitNextDestinationSensor(TasTransitSensorBase):
+    """Sensor for the next bus destination."""
 
     def __init__(
         self,
@@ -288,9 +280,79 @@ class TasTransitTimeToDepartureSensor(TasTransitSensorBase):
         stop_id: str,
         stop_name: str,
     ) -> None:
-        """Initialize the time to departure sensor."""
-        super().__init__(coordinator, config_entry, stop_id, stop_name, SENSOR_TIME_TO_DEPARTURE)
-        self._attr_name = f"{stop_name} Time to Departure"
+        """Initialize the next destination sensor."""
+        super().__init__(coordinator, config_entry, stop_id, stop_name, "next_destination")
+        self._attr_name = f"{stop_name} Next Destination"
+        self._attr_icon = "mdi:map-marker"
+
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the next bus destination."""
+        stop_data = self.stop_data
+        if not stop_data:
+            return None
+            
+        if not stop_data.get("next_departure"):
+            return None
+        
+        next_departure = stop_data["next_departure"]
+        return next_departure.get("destinationName")
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes."""
+        stop_data = self.stop_data
+        attributes = {
+            "stop_id": self.stop_id,
+            **self._get_filter_attributes(),
+        }
+        
+        # Add stop information (no GPS coordinates to avoid appearing on map)
+        if stop_data and stop_data.get("stop_location"):
+            location_data = stop_data["stop_location"]
+            attributes.update({
+                "stop_code": location_data.get("code", ""),
+                "stop_zone": location_data.get("zone", ""),
+                "stop_platform_code": location_data.get("platform_code", ""),
+                "parent_station": location_data.get("parent_station", ""),
+            })
+        
+        # Add departure information if available
+        if stop_data and stop_data.get("next_departure"):
+            next_departure = stop_data["next_departure"]
+            attributes.update({
+                "line_number": next_departure.get("lineNumber", "Unknown"),
+                "trip_id": next_departure.get("tripId", "Unknown"),
+                "platform_code": next_departure.get("platformCode", "Unknown"),
+                "cancelled": next_departure.get("cancelled", False),
+                "scheduled_minutes_until": next_departure.get("scheduledMinutesUntilDeparture"),
+                "estimated_minutes_until": next_departure.get("estimatedMinutesUntilDeparture"),
+            })
+        
+        # Add vehicle tracking information if available
+        if stop_data:
+            attributes.update({
+                "vehicles": stop_data.get("vehicles", []),
+                "vehicle_tracking_enabled": True,
+            })
+        
+        return attributes
+
+
+class TasTransitTimeToNextBusSensor(TasTransitSensorBase):
+    """Sensor for time until next bus arrival."""
+
+    def __init__(
+        self,
+        coordinator: TasTransitDataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        stop_id: str,
+        stop_name: str,
+    ) -> None:
+        """Initialize the time to next bus sensor."""
+        super().__init__(coordinator, config_entry, stop_id, stop_name, "time_to_next_bus")
+        self._attr_name = f"{stop_name} Time to Next Bus"
         self._attr_native_unit_of_measurement = "min"
         self._attr_device_class = SensorDeviceClass.DURATION
         self._attr_state_class = SensorStateClass.MEASUREMENT
@@ -314,7 +376,7 @@ class TasTransitTimeToDepartureSensor(TasTransitSensorBase):
             **self._get_filter_attributes(),
         }
         
-        # Add location information if available
+        # Add stop information (no GPS coordinates to avoid appearing on map)
         if stop_data and stop_data.get("stop_location"):
             location_data = stop_data["stop_location"]
             attributes.update({
@@ -322,8 +384,19 @@ class TasTransitTimeToDepartureSensor(TasTransitSensorBase):
                 "stop_zone": location_data.get("zone", ""),
                 "stop_platform_code": location_data.get("platform_code", ""),
                 "parent_station": location_data.get("parent_station", ""),
-                "latitude": location_data.get("latitude"),
-                "longitude": location_data.get("longitude"),
+            })
+        
+        # Add departure information if available
+        if stop_data and stop_data.get("next_departure"):
+            next_departure = stop_data["next_departure"]
+            attributes.update({
+                "line_number": next_departure.get("lineNumber", "Unknown"),
+                "destination": next_departure.get("destinationName", "Unknown"),
+                "trip_id": next_departure.get("tripId", "Unknown"),
+                "platform_code": next_departure.get("platformCode", "Unknown"),
+                "cancelled": next_departure.get("cancelled", False),
+                "scheduled_minutes_until": next_departure.get("scheduledMinutesUntilDeparture"),
+                "estimated_minutes_until": next_departure.get("estimatedMinutesUntilDeparture"),
             })
         
         # Add vehicle tracking information if available
@@ -337,94 +410,3 @@ class TasTransitTimeToDepartureSensor(TasTransitSensorBase):
 
 
 
-class TasTransitBusRouteSensor(TasTransitSensorBase):
-    """Sensor for bus route information."""
-
-    def __init__(
-        self,
-        coordinator: TasTransitDataUpdateCoordinator,
-        config_entry: ConfigEntry,
-        stop_id: str,
-        stop_name: str,
-    ) -> None:
-        """Initialize the bus route sensor."""
-        super().__init__(coordinator, config_entry, stop_id, stop_name, SENSOR_BUS_ROUTE)
-        self._attr_name = f"{stop_name} Bus Route"
-        self._attr_icon = "mdi:routes"
-
-    @property
-    def native_value(self) -> str | None:
-        """Return the bus route."""
-        stop_data = self.stop_data
-        if not stop_data or not stop_data.get("next_departure"):
-            return None
-        
-        next_departure = stop_data["next_departure"]
-        return next_departure.get("lineNumber", "Unknown")
-
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return additional state attributes."""
-        stop_data = self.stop_data
-        
-        # Start with basic attributes and filter information
-        attributes = {
-            "stop_id": self.stop_id,
-            **self._get_filter_attributes(),
-        }
-        
-        # Add location information if available
-        if stop_data and stop_data.get("stop_location"):
-            location_data = stop_data["stop_location"]
-            attributes.update({
-                "stop_code": location_data.get("code", ""),
-                "stop_zone": location_data.get("zone", ""),
-                "stop_platform_code": location_data.get("platform_code", ""),
-                "parent_station": location_data.get("parent_station", ""),
-                "latitude": location_data.get("latitude"),
-                "longitude": location_data.get("longitude"),
-            })
-        
-        if not stop_data or not stop_data.get("next_departure"):
-            return attributes
-        
-        next_departure = stop_data["next_departure"]
-        attributes.update({
-            "destination": next_departure.get("destinationName", "Unknown"),
-            "trip_id": next_departure.get("tripId", "Unknown"),
-            "platform_code": next_departure.get("platformCode", "Unknown"),
-            "cancelled": next_departure.get("cancelled", False),
-            "scheduled_minutes_until": next_departure.get("scheduledMinutesUntilDeparture"),
-            "estimated_minutes_until": next_departure.get("estimatedMinutesUntilDeparture"),
-            "all_departures": self._get_all_departures_info(),
-            "vehicles": stop_data.get("vehicles", []),
-            "vehicle_tracking_enabled": True,
-        })
-        
-        return attributes
-
-    def _get_all_departures_info(self) -> list[dict[str, Any]]:
-        """Get information for all upcoming departures."""
-        stop_data = self.stop_data
-        if not stop_data:
-            return []
-        
-        departures_info = []
-        for departure in stop_data.get("departures", []):
-            scheduled_time = self.coordinator._get_scheduled_time(departure)
-            estimated_time = self.coordinator._get_estimated_time(departure)
-            
-            info = {
-                "line_number": departure.get("lineNumber", "Unknown"),
-                "destination": departure.get("destinationName", "Unknown"),
-                "scheduled_time": scheduled_time.isoformat() if scheduled_time else None,
-                "estimated_time": estimated_time.isoformat() if estimated_time else None,
-                "scheduled_minutes_until": departure.get("scheduledMinutesUntilDeparture"),
-                "estimated_minutes_until": departure.get("estimatedMinutesUntilDeparture"),
-                "cancelled": departure.get("cancelled", False),
-                "trip_id": departure.get("tripId"),
-                "platform_code": departure.get("platformCode"),
-            }
-            departures_info.append(info)
-        
-        return departures_info

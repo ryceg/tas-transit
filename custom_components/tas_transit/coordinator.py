@@ -55,7 +55,9 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         self.vehicle_manager = VehicleManager()
         self.websocket_client = TasTransitWebSocketClient(self._handle_vehicle_update)
         self._vehicle_entity_callback: Callable[[list[Vehicle]], None] | None = None
+        self._vehicle_sensor_callback: Callable[[list[Vehicle]], None] | None = None
         self._tracked_vehicle_entities: set[str] = set()
+        self._tracked_vehicle_sensors: set[str] = set()
         self._websocket_started = False
 
     async def _async_update_data(self) -> dict[str, Any]:
@@ -370,29 +372,47 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         """Set callback for adding new vehicle entities."""
         self._vehicle_entity_callback = callback
 
+    def set_vehicle_sensor_callback(self, callback: Callable[[list[Vehicle]], None]) -> None:
+        """Set callback for adding new vehicle sensor entities."""
+        self._vehicle_sensor_callback = callback
+
     async def _update_vehicle_entities(self) -> None:
-        """Update vehicle tracker entities based on active vehicles."""
-        if self._vehicle_entity_callback is None:
-            return
-        
+        """Update vehicle tracker entities and sensors based on active vehicles."""
         active_vehicles = self.vehicle_manager.get_active_vehicles()
-        new_vehicles = []
         
-        for vehicle in active_vehicles:
-            if vehicle.vehicle_id not in self._tracked_vehicle_entities:
-                new_vehicles.append(vehicle)
-                self._tracked_vehicle_entities.add(vehicle.vehicle_id)
+        # Handle device tracker entities
+        if self._vehicle_entity_callback is not None:
+            new_vehicles = []
+            
+            for vehicle in active_vehicles:
+                if vehicle.vehicle_id not in self._tracked_vehicle_entities:
+                    new_vehicles.append(vehicle)
+                    self._tracked_vehicle_entities.add(vehicle.vehicle_id)
+            
+            if new_vehicles:
+                _LOGGER.debug("Adding %d new vehicle tracker entities", len(new_vehicles))
+                self._vehicle_entity_callback(new_vehicles)
         
-        if new_vehicles:
-            _LOGGER.debug("Adding %d new vehicle entities", len(new_vehicles))
-            self._vehicle_entity_callback(new_vehicles)
+        # Handle vehicle sensor entities
+        if self._vehicle_sensor_callback is not None:
+            new_sensor_vehicles = []
+            
+            for vehicle in active_vehicles:
+                if vehicle.vehicle_id not in self._tracked_vehicle_sensors:
+                    new_sensor_vehicles.append(vehicle)
+                    self._tracked_vehicle_sensors.add(vehicle.vehicle_id)
+            
+            if new_sensor_vehicles:
+                _LOGGER.debug("Adding %d new vehicle sensor entities", len(new_sensor_vehicles))
+                self._vehicle_sensor_callback(new_sensor_vehicles)
         
         # Clean up entities for vehicles that no longer exist
         all_vehicle_ids = {v.vehicle_id for v in self.vehicle_manager.get_all_vehicles().values()}
-        removed_vehicles = self._tracked_vehicle_entities - all_vehicle_ids
         
+        # Clean up tracker entities
+        removed_vehicles = self._tracked_vehicle_entities - all_vehicle_ids
         if removed_vehicles:
-            _LOGGER.debug("Cleaning up %d removed vehicle entities", len(removed_vehicles))
+            _LOGGER.debug("Cleaning up %d removed vehicle tracker entities", len(removed_vehicles))
             # Remove entities from Home Assistant
             if hasattr(self, '_device_tracker_entities'):
                 for vehicle_id in removed_vehicles:
@@ -402,6 +422,12 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                         self._device_tracker_entities.pop(vehicle_id, None)
             
             self._tracked_vehicle_entities -= removed_vehicles
+        
+        # Clean up sensor entities
+        removed_sensor_vehicles = self._tracked_vehicle_sensors - all_vehicle_ids
+        if removed_sensor_vehicles:
+            _LOGGER.debug("Cleaning up %d removed vehicle sensor entities", len(removed_sensor_vehicles))
+            self._tracked_vehicle_sensors -= removed_sensor_vehicles
 
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator."""

@@ -31,9 +31,17 @@ class VehicleLocation:
             return None
             
         try:
+            # Preserve high precision coordinates from the API
+            latitude = location.get("latitude")
+            longitude = location.get("longitude")
+            
+            if latitude is None or longitude is None:
+                _LOGGER.debug("Missing latitude or longitude in location data")
+                return None
+                
             return cls(
-                latitude=float(location.get("latitude", 0)),
-                longitude=float(location.get("longitude", 0)),
+                latitude=float(latitude),
+                longitude=float(longitude),
                 heading=float(data.get("heading")) if data.get("heading") is not None else None,
             )
         except (ValueError, TypeError) as err:
@@ -94,7 +102,7 @@ class Vehicle:
                 
                 _LOGGER.debug("Updated vehicle %s: route %s, location %s", 
                             self.vehicle_id, self.line_number, 
-                            f"{self.location.latitude:.4f},{self.location.longitude:.4f}" if self.location else "unknown")
+                            f"{self.location.latitude},{self.location.longitude}" if self.location else "unknown")
                 return True
             
             else:

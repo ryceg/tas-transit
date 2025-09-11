@@ -483,13 +483,13 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug("Adding %d new vehicle sensor entities", len(new_sensor_vehicles))
                 self._vehicle_sensor_callback(new_sensor_vehicles)
         
-        # Clean up entities for vehicles that no longer exist
-        all_vehicle_ids = {v.vehicle_id for v in self.vehicle_manager.get_all_vehicles().values()}
+        # Clean up entities for vehicles that are no longer active
+        active_vehicle_ids = {v.vehicle_id for v in self.vehicle_manager.get_active_vehicles()}
         
-        # Clean up tracker entities
-        removed_vehicles = self._tracked_vehicle_entities - all_vehicle_ids
+        # Clean up tracker entities for inactive vehicles
+        removed_vehicles = self._tracked_vehicle_entities - active_vehicle_ids
         if removed_vehicles:
-            _LOGGER.debug("Cleaning up %d removed vehicle tracker entities", len(removed_vehicles))
+            _LOGGER.debug("Cleaning up %d inactive vehicle tracker entities", len(removed_vehicles))
             # Remove entities from Home Assistant
             if hasattr(self, '_device_tracker_entities'):
                 for vehicle_id in removed_vehicles:
@@ -500,10 +500,10 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
             
             self._tracked_vehicle_entities -= removed_vehicles
         
-        # Clean up sensor entities
-        removed_sensor_vehicles = self._tracked_vehicle_sensors - all_vehicle_ids
+        # Clean up sensor entities for inactive vehicles
+        removed_sensor_vehicles = self._tracked_vehicle_sensors - active_vehicle_ids
         if removed_sensor_vehicles:
-            _LOGGER.debug("Cleaning up %d removed vehicle sensor entities", len(removed_sensor_vehicles))
+            _LOGGER.debug("Cleaning up %d inactive vehicle sensor entities", len(removed_sensor_vehicles))
             self._tracked_vehicle_sensors -= removed_sensor_vehicles
 
     async def async_shutdown(self) -> None:

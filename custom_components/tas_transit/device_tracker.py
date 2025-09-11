@@ -22,15 +22,31 @@ async def async_setup_entry(
     config_entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up device tracker platform for bus vehicles."""
+    """Set up device tracker platform for bus stops and vehicles."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
 
     # Track active entities for removal
     coordinator._device_tracker_entities = {}
 
-    # The coordinator will handle adding/removing vehicle trackers dynamically
-    # Initial setup creates no entities - they are created when vehicles appear
-    _LOGGER.debug("Device tracker platform initialized for entry %s", config_entry.entry_id)
+    # Create device trackers for each configured bus stop
+    from .const import CONF_STOPS, CONF_STOP_ID, CONF_STOP_NAME
+    stop_trackers = []
+    
+    for stop_config in config_entry.data[CONF_STOPS]:
+        stop_id = stop_config[CONF_STOP_ID]
+        stop_name = stop_config[CONF_STOP_NAME]
+        
+        stop_tracker = TasTransitStopTracker(
+            coordinator=coordinator,
+            config_entry=config_entry,
+            stop_id=stop_id,
+            stop_name=stop_name,
+        )
+        stop_trackers.append(stop_tracker)
+    
+    if stop_trackers:
+        async_add_entities(stop_trackers)
+        _LOGGER.debug("Added %d bus stop trackers", len(stop_trackers))
 
     # Store the callback for adding new vehicle entities
     coordinator.set_vehicle_entity_callback(
@@ -245,5 +261,114 @@ class TasTransitVehicleTracker(CoordinatorEntity, TrackerEntity):
         # Schedule entity removal
         self.hass.async_create_task(self.async_remove())
 
+
+class TasTransitStopTracker(CoordinatorEntity, TrackerEntity):
+    """Device tracker for a bus stop location."""
+
+    def __init__(
+        self,
+        coordinator: TasTransitDataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        stop_id: str,
+        stop_name: str,
+    ) -> None:
+        """Initialize the stop tracker."""
+        super().__init__(coordinator)
+
+        self._config_entry = config_entry
+        self._stop_id = stop_id
+        self._stop_name = stop_name
+
+        self._attr_unique_id = f"{config_entry.entry_id}_stop_{stop_id}"
+        self._attr_should_poll = False
+
+        # Set up device info - using stop_ prefix for consistency
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, f"stop_{stop_id}")},
+            "name": f"{stop_name}",
+            "manufacturer": "Tasmanian Government",
+            "model": "Bus Stop",
+            "suggested_area": "Transport",
+        }
+
+    @property
+    def name(self) -> str:
+        """Return the name of the tracker."""
+        return f"{self._stop_name}"
+
+    @property
+    def source_type(self) -> SourceType:
+        """Return the source type of the tracker."""
+        return SourceType.GPS
+
+    @property
+    def latitude(self) -> float | None:
+        """Return the latitude of the stop."""
+        stop_data = self._get_stop_data()
+        if stop_data and stop_data.get("stop_location"):
+            return stop_data["stop_location"].get("latitude")
+        return None
+
+    @property
+    def longitude(self) -> float | None:
+        """Return the longitude of the stop."""
+        stop_data = self._get_stop_data()
+        if stop_data and stop_data.get("stop_location"):
+            return stop_data["stop_location"].get("longitude")
+        return None
+
+    @property
+    def location_accuracy(self) -> int:
+        """Return the location accuracy radius in meters."""
+        # Bus stop locations are generally accurate
+        return 5
+
+    @property
+    def icon(self) -> str:
+        """Return the icon for the tracker."""
+        return "mdi:bus-stop"
+
+    @property
+    def available(self) -> bool:
+        """Return if the stop tracker is available."""
+        stop_data = self._get_stop_data()
+        return (
+            stop_data is not None 
+            and stop_data.get("stop_location") is not None
+            and stop_data["stop_location"].get("latitude") is not None
+            and stop_data["stop_location"].get("longitude") is not None
+        )
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional state attributes."""
+        stop_data = self._get_stop_data()
+        if not stop_data:
+            return {"stop_id": self._stop_id}
+
+        attrs = {"stop_id": self._stop_id}
+        
+        # Add stop information if available
+        if stop_data.get("stop_location"):
+            location_data = stop_data["stop_location"]
+            attrs.update({
+                "stop_code": location_data.get("code", ""),
+                "stop_zone": location_data.get("zone", ""),
+                "stop_platform_code": location_data.get("platform_code", ""),
+                "parent_station": location_data.get("parent_station", ""),
+            })
+
+        return attrs
+
+    def _get_stop_data(self) -> dict[str, Any] | None:
+        """Get the stop data from coordinator."""
+        if not self.coordinator.data:
+            return None
+        return self.coordinator.data.get(self._stop_id)
+
+    async def async_added_to_hass(self) -> None:
+        """When entity is added to hass."""
+        await super().async_added_to_hass()
+        _LOGGER.info("Added bus stop tracker for %s", self._stop_id)
 
 

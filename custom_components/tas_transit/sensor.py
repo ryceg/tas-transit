@@ -106,7 +106,7 @@ class TasTransitSensorBase(CoordinatorEntity, SensorEntity):
         self.sensor_type = sensor_type
         self._attr_unique_id = f"{config_entry.entry_id}_{stop_id}_{sensor_type}"
         self._attr_device_info = {
-            "identifiers": {(DOMAIN, f"{config_entry.entry_id}_{stop_id}")},
+            "identifiers": {(DOMAIN, f"stop_{stop_id}")},
             "name": f"{stop_name}",
             "manufacturer": "Tasmanian Government",
             "model": "Bus Stop",

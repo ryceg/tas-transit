@@ -357,7 +357,7 @@ class OptionsFlow(config_entries.OptionsFlow):
                 stop_config[CONF_FILTER_MODE] = filter_mode
 
             # Add stop to existing configuration
-            new_data = dict(self._config_entry.data)
+            new_data = dict(self.config_entry.data)
             new_data[CONF_STOPS].append(stop_config)
 
             return self.async_create_entry(

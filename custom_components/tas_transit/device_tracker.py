@@ -358,6 +358,41 @@ class TasTransitStopTracker(CoordinatorEntity, TrackerEntity):
                 "parent_station": location_data.get("parent_station", ""),
             })
 
+        # Add transit information for easy access from map
+        if stop_data.get("next_departure"):
+            next_departure = stop_data["next_departure"]
+            attrs.update({
+                "next_route": next_departure.get("lineNumber", "Unknown"),
+                "next_destination": next_departure.get("destinationName", "Unknown"),
+                "trip_id": next_departure.get("tripId", "Unknown"),
+                "platform_code": next_departure.get("platformCode", "Unknown"),
+                "cancelled": next_departure.get("cancelled", False),
+                "scheduled_minutes_until": next_departure.get("scheduledMinutesUntilDeparture"),
+                "estimated_minutes_until": next_departure.get("estimatedMinutesUntilDeparture"),
+            })
+        else:
+            attrs.update({
+                "next_route": "No service",
+                "next_destination": "No service", 
+                "scheduled_minutes_until": None,
+                "estimated_minutes_until": None,
+            })
+
+        # Add time to next bus as primary attribute
+        time_to_departure = stop_data.get("time_to_departure")
+        if time_to_departure is not None:
+            attrs["time_to_next_bus"] = time_to_departure
+            attrs["time_to_next_bus_text"] = f"{time_to_departure} min" if time_to_departure > 0 else "Due now"
+        else:
+            attrs["time_to_next_bus"] = None
+            attrs["time_to_next_bus_text"] = "No service"
+
+        # Add vehicle tracking information if available
+        vehicles = stop_data.get("vehicles", [])
+        attrs["vehicle_count"] = len(vehicles)
+        if vehicles:
+            attrs["tracked_vehicles"] = [v.get("vehicle_id") for v in vehicles]
+
         return attrs
 
     def _get_stop_data(self) -> dict[str, Any] | None:

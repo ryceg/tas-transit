@@ -37,8 +37,13 @@ WEBSOCKET_TIMEOUT: Final = 30
 WEBSOCKET_HEARTBEAT: Final = 60
 
 # Vehicle Tracking
-VEHICLE_INACTIVE_TIMEOUT: Final = 600  # 10 minutes in seconds
+VEHICLE_INACTIVE_TIMEOUT: Final = 600  # 10 minutes in seconds - fallback timeout
 VEHICLE_CLEANUP_INTERVAL: Final = 300  # 5 minutes in seconds
+
+# Trip Completion Detection
+VEHICLE_TRIP_COMPLETED_GRACE_PERIOD: Final = 300    # 5 minutes after trip completion detected
+VEHICLE_STALLED_AT_INDEX_TIMEOUT: Final = 900       # 15 minutes if stalled at same index
+VEHICLE_FALLBACK_TIMEOUT: Final = 3600              # 60 minutes absolute fallback timeout
 
 # Filter Configuration
 FILTER_MODE_INCLUDE: Final = "include"

@@ -29,7 +29,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         config_entry_id=entry.entry_id,
         identifiers={(DOMAIN, f"{entry.entry_id}_coordinator")},
         name="Tasmanian Transport Coordinator",
-        manufacturer="Tasmanian Transport Services",
+        manufacturer="Tasmanian Government",
         model="Transit Coordinator",
     )
 

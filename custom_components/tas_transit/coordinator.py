@@ -52,7 +52,7 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         self.config_entry = config_entry
         self.api = TasTransitApi()
         self._current_interval = UPDATE_INTERVAL_DEFAULT
-        
+
         # WebSocket and vehicle tracking
         self.vehicle_manager = VehicleManager()
         self.websocket_client = TasTransitWebSocketClient(self._handle_vehicle_update)
@@ -61,7 +61,7 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         self._tracked_vehicle_entities: set[str] = set()
         self._tracked_vehicle_sensors: set[str] = set()
         self._websocket_started = False
-        
+
         # GTFS data management
         self.gtfs_manager = GTFSManager(hass.config.config_dir)
         self.route_shape_manager = RouteShapeManager(self.gtfs_manager)
@@ -73,52 +73,55 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
             # Initialize GTFS data if not already done
             if not self._gtfs_initialized:
                 await self._initialize_gtfs_data()
-            
+
             # Start WebSocket client if not already started
             if not self._websocket_started:
                 await self._start_websocket_client()
-            
+
             stops_data = {}
             min_time_to_departure = None
-            
+
             # Process each configured stop
             for stop_config in self.config_entry.data[CONF_STOPS]:
                 stop_id = stop_config[CONF_STOP_ID]
                 _LOGGER.debug("Fetching departures for stop %s", stop_id)
                 departures = await self.api.get_stop_departures(stop_id)
                 _LOGGER.debug("Received %d departures for stop %s", len(departures), stop_id)
-                
+
                 # Enrich departures with GTFS data
                 enriched_departures = self._enrich_departures_with_gtfs(departures)
-                
+
                 # Process the departures data for this stop with filters
                 processed_data = self._process_departures(enriched_departures, stop_config)
-                
+
                 # Add vehicle tracking data to processed data
                 processed_data["vehicles"] = self._get_vehicles_for_stop(stop_id, processed_data.get("departures", []))
-                
+
                 # Fetch stop location data from currentstopschedule API
                 stop_location_data = await self._get_stop_location(stop_id)
                 if stop_location_data:
                     processed_data["stop_location"] = stop_location_data
-                
+
                 stops_data[stop_id] = processed_data
-                _LOGGER.debug("Processed data for stop %s: next_departure=%s, time_to_departure=%s, vehicles=%d, has_location=%s", 
+                _LOGGER.debug("Processed data for stop %s: next_departure=%s, time_to_departure=%s, vehicles=%d, has_location=%s",
                              stop_id, processed_data.get("next_departure") is not None, processed_data.get("time_to_departure"),
                              len(processed_data.get("vehicles", [])), processed_data.get("stop_location") is not None)
-                
+
                 # Track the earliest departure across all stops
                 time_to_departure = processed_data.get("time_to_departure")
                 if time_to_departure is not None:
                     if min_time_to_departure is None or time_to_departure < min_time_to_departure:
                         min_time_to_departure = time_to_departure
-            
+
             # Schedule next update based on closest departure
             await self._schedule_next_update(min_time_to_departure)
-            
+
+            # Mark vehicles as completed if they no longer appear in API data
+            self._mark_missing_vehicles_as_completed(stops_data)
+
             # Update vehicle entity tracking
             await self._update_vehicle_entities()
-            
+
             return stops_data
 
         except TasTransitApiError as err:
@@ -130,21 +133,21 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         line_filters = stop_config.get(CONF_LINE_FILTERS, [])
         destination_filters = stop_config.get(CONF_DESTINATION_FILTERS, [])
         filter_mode = stop_config.get(CONF_FILTER_MODE, FILTER_MODE_INCLUDE)
-        
+
         # If no filters configured, return all departures
         if not line_filters and not destination_filters:
             return departures
-        
+
         filtered_departures = []
-        
+
         for departure in departures:
             line_number = departure.get("lineNumber", "").strip()
             destination = departure.get("destinationName", "").strip()
-            
+
             # Check if departure matches filters
             line_match = self._matches_line_filter(line_number, line_filters)
             destination_match = self._matches_destination_filter(destination, destination_filters)
-            
+
             # Determine if departure should be included
             if filter_mode == FILTER_MODE_INCLUDE:
                 # Include if matches any line filter OR any destination filter (when filters are provided)
@@ -166,20 +169,20 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                 if destination_filters and destination_match:
                     should_exclude = True
                 should_include = not should_exclude
-            
+
             if should_include:
                 filtered_departures.append(departure)
                 _LOGGER.debug("Including departure: line=%s, dest=%s", line_number, destination)
             else:
                 _LOGGER.debug("Filtering out departure: line=%s, dest=%s", line_number, destination)
-        
+
         return filtered_departures
 
     def _matches_line_filter(self, line_number: str, line_filters: list[str]) -> bool:
         """Check if line number matches any of the line filters."""
         if not line_filters:
             return False
-        
+
         line_number_lower = line_number.lower()
         for filter_line in line_filters:
             filter_line_lower = filter_line.strip().lower()
@@ -192,7 +195,7 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         """Check if destination matches any of the destination filters."""
         if not destination_filters:
             return False
-        
+
         destination_lower = destination.lower()
         for filter_dest in destination_filters:
             filter_dest_lower = filter_dest.strip().lower()
@@ -204,13 +207,13 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
     def _process_departures(self, departures: list[dict[str, Any]], stop_config: dict[str, Any]) -> dict[str, Any]:
         """Process departure data with optional filtering."""
         now = datetime.now()
-        
+
         _LOGGER.debug("Processing %d raw departures", len(departures))
-        
+
         # Apply filters if configured
         filtered_departures = self._apply_filters(departures, stop_config)
         _LOGGER.debug("After filtering: %d departures remaining", len(filtered_departures))
-        
+
         # Filter departures to only include upcoming ones (non-cancelled, positive minutes)
         upcoming_departures = []
         for departure in filtered_departures:
@@ -218,29 +221,29 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
             minutes_until = departure.get("estimatedMinutesUntilDeparture")
             if minutes_until is None:
                 minutes_until = departure.get("scheduledMinutesUntilDeparture")
-            
+
             cancelled = departure.get("cancelled", False)
-            _LOGGER.debug("Departure: line=%s, dest=%s, minutes_until=%s, cancelled=%s", 
+            _LOGGER.debug("Departure: line=%s, dest=%s, minutes_until=%s, cancelled=%s",
                          departure.get("lineNumber"), departure.get("destinationName"), minutes_until, cancelled)
-            
+
             # Include if not cancelled and has future departure time
             if not cancelled and minutes_until is not None and minutes_until >= 0:
                 upcoming_departures.append(departure)
-        
+
         _LOGGER.debug("Found %d upcoming departures after filtering", len(upcoming_departures))
-        
+
         # Sort by minutes until departure (estimated or scheduled)
         def sort_key(dep):
             est_min = dep.get("estimatedMinutesUntilDeparture")
             if est_min is not None:
                 return est_min
             return dep.get("scheduledMinutesUntilDeparture", 999999)
-        
+
         upcoming_departures.sort(key=sort_key)
-        
+
         # Get the next departure
         next_departure = upcoming_departures[0] if upcoming_departures else None
-        
+
         if not next_departure:
             _LOGGER.debug("No upcoming departures found")
             return {
@@ -249,15 +252,15 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                 "departures": [],
                 "last_updated": now,
             }
-        
+
         # Get time to departure (prefer estimated over scheduled)
         time_to_departure = next_departure.get("estimatedMinutesUntilDeparture")
         if time_to_departure is None:
             time_to_departure = next_departure.get("scheduledMinutesUntilDeparture")
-        
-        _LOGGER.debug("Next departure: line=%s, dest=%s, time_to_departure=%s", 
+
+        _LOGGER.debug("Next departure: line=%s, dest=%s, time_to_departure=%s",
                      next_departure.get("lineNumber"), next_departure.get("destinationName"), time_to_departure)
-        
+
         return {
             "next_departure": next_departure,
             "time_to_departure": time_to_departure,
@@ -299,26 +302,26 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                 UPDATE_INTERVAL_THRESHOLD,
                 interval
             )
-        
+
         # Update interval if changed - coordinator will handle the actual scheduling
         if interval != self._current_interval:
             self._current_interval = interval
             self.update_interval = timedelta(seconds=interval)
             self.logger.debug("Updated coordinator interval to %d seconds", interval)
-    
+
     async def _start_websocket_client(self) -> None:
         """Start the WebSocket client and subscribe to configured stops."""
         _LOGGER.info("Starting WebSocket client for real-time vehicle tracking")
-        
+
         # Start the WebSocket client
         await self.websocket_client.start()
-        
+
         # Subscribe to all configured stops
         for stop_config in self.config_entry.data[CONF_STOPS]:
             stop_id = stop_config[CONF_STOP_ID]
             await self.websocket_client.subscribe_to_stop(stop_id)
             _LOGGER.debug("Subscribed to WebSocket updates for stop %s", stop_id)
-        
+
         self._websocket_started = True
 
     async def _initialize_gtfs_data(self) -> None:
@@ -338,35 +341,35 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
 
     def _enrich_departures_with_gtfs(self, departures: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Enrich departure data with GTFS information.
-        
+
         Args:
             departures: List of departure data from real-time API
-            
+
         Returns:
             List of enriched departure data with GTFS fields
         """
         if not self.gtfs_manager.is_data_available:
             return departures
-        
+
         enriched_departures = []
         for departure in departures:
             enriched = self.gtfs_manager.enrich_departure_data(departure)
             enriched_departures.append(enriched)
-        
+
         return enriched_departures
 
     def get_active_route_shapes(self) -> dict[str, dict[str, Any]]:
         """Get route shape data for active trips.
-        
+
         Returns:
             Dict mapping shape_id to route visualization data
         """
         if not self.gtfs_manager.is_data_available:
             return {}
-        
+
         # Get all active trip IDs
         active_trip_ids = []
-        
+
         # From current departures data
         if hasattr(self, 'data') and self.data:
             for stop_data in self.data.values():
@@ -375,15 +378,15 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                     trip_id = departure.get("tripId")
                     if trip_id:
                         active_trip_ids.append(trip_id)
-        
+
         # From active vehicles
         for vehicle in self.vehicle_manager.get_active_vehicles():
             if vehicle.trip_id:
                 active_trip_ids.append(vehicle.trip_id)
-        
+
         # Remove duplicates
         active_trip_ids = list(set(active_trip_ids))
-        
+
         return self.route_shape_manager.get_active_route_shapes(active_trip_ids)
 
     def _handle_vehicle_update(self, vehicle_data: dict[str, Any]) -> None:
@@ -397,10 +400,10 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
     def _get_vehicles_for_stop(self, stop_id: str, departures: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Get vehicle tracking data for departures at a stop."""
         vehicles = []
-        
+
         # Match vehicles to departures based on trip_id
         trip_ids = {dep.get("tripId") for dep in departures if dep.get("tripId")}
-        
+
         for vehicle in self.vehicle_manager.get_active_vehicles():
             if vehicle.trip_id in trip_ids:
                 vehicles.append({
@@ -410,7 +413,7 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                     "location": vehicle.location.to_dict() if vehicle.location else None,
                     "last_updated": vehicle.last_updated.isoformat(),
                 })
-        
+
         return vehicles
 
     async def _get_stop_location(self, stop_id: str) -> dict[str, Any] | None:
@@ -418,11 +421,11 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         try:
             _LOGGER.debug("Fetching stop location for stop %s", stop_id)
             schedule_data = await self.api.get_stop_schedule(stop_id)
-            
+
             if schedule_data and "stop" in schedule_data:
                 stop_info = schedule_data["stop"]
                 location = stop_info.get("location")
-                
+
                 if location and "latitude" in location and "longitude" in location:
                     return {
                         "stop_id": stop_info.get("id", stop_id),
@@ -434,10 +437,10 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                         "platform_code": stop_info.get("platformCode", ""),
                         "parent_station": stop_info.get("parentStation", ""),
                     }
-            
+
             _LOGGER.warning("No location data found for stop %s", stop_id)
             return None
-            
+
         except TasTransitApiError as err:
             _LOGGER.error("Error fetching stop location for %s: %s", stop_id, err)
             return None
@@ -456,36 +459,36 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
     async def _update_vehicle_entities(self) -> None:
         """Update vehicle tracker entities and sensors based on active vehicles."""
         active_vehicles = self.vehicle_manager.get_active_vehicles()
-        
+
         # Handle device tracker entities
         if self._vehicle_entity_callback is not None:
             new_vehicles = []
-            
+
             for vehicle in active_vehicles:
                 if vehicle.vehicle_id not in self._tracked_vehicle_entities:
                     new_vehicles.append(vehicle)
                     self._tracked_vehicle_entities.add(vehicle.vehicle_id)
-            
+
             if new_vehicles:
                 _LOGGER.debug("Adding %d new vehicle tracker entities", len(new_vehicles))
                 self._vehicle_entity_callback(new_vehicles)
-        
+
         # Handle vehicle sensor entities
         if self._vehicle_sensor_callback is not None:
             new_sensor_vehicles = []
-            
+
             for vehicle in active_vehicles:
                 if vehicle.vehicle_id not in self._tracked_vehicle_sensors:
                     new_sensor_vehicles.append(vehicle)
                     self._tracked_vehicle_sensors.add(vehicle.vehicle_id)
-            
+
             if new_sensor_vehicles:
                 _LOGGER.debug("Adding %d new vehicle sensor entities", len(new_sensor_vehicles))
                 self._vehicle_sensor_callback(new_sensor_vehicles)
-        
+
         # Clean up entities for vehicles that are no longer active
         active_vehicle_ids = {v.vehicle_id for v in self.vehicle_manager.get_active_vehicles()}
-        
+
         # Clean up tracker entities for inactive vehicles
         removed_vehicles = self._tracked_vehicle_entities - active_vehicle_ids
         if removed_vehicles:
@@ -497,9 +500,9 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                     if entity:
                         entity.mark_for_removal()
                         self._device_tracker_entities.pop(vehicle_id, None)
-            
+
             self._tracked_vehicle_entities -= removed_vehicles
-        
+
         # Clean up sensor entities for inactive vehicles
         removed_sensor_vehicles = self._tracked_vehicle_sensors - active_vehicle_ids
         if removed_sensor_vehicles:
@@ -509,14 +512,29 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator."""
         _LOGGER.info("Shutting down Tasmanian Transport coordinator")
-        
+
         # Stop WebSocket client
         if hasattr(self, 'websocket_client'):
             await self.websocket_client.disconnect()
-        
+
         # Close GTFS manager session
         if hasattr(self, 'gtfs_manager'):
             await self.gtfs_manager.close()
-        
+
         # Close API session
         await self.api.close()
+
+    def _mark_missing_vehicles_as_completed(self, stops_data: dict[str, Any]) -> None:
+        """Mark vehicles as completed if they no longer appear in API data."""
+        # Collect all active trip IDs from current API responses
+        active_trip_ids: set[str] = set()
+
+        for stop_data in stops_data.values():
+            departures = stop_data.get("departures", [])
+            for departure in departures:
+                trip_id = departure.get("tripId")
+                if trip_id:
+                    active_trip_ids.add(trip_id)
+
+        # Mark vehicles not in API as completed
+        self.vehicle_manager.mark_vehicles_not_in_api_as_completed(active_trip_ids)

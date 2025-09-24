@@ -1,0 +1,13 @@
+[
+  {
+    "type": "INFORMATION",
+    "localizedMessages": {
+      "fi": "Ennusteiden kattavuus: 13.4%",
+      "en": "Forecast coverage: 13.4%"
+    }
+  },
+  {
+    "type": "INFORMATION",
+    "localizedMessages": { "fi": "Käyttäjien määrä: 7", "en": "User count: 7" }
+  }
+]

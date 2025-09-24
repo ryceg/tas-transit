@@ -1,0 +1,483 @@
+[
+  {
+    "longName": "University to Kings Meadows via Launceston City",
+    "shortName": "110",
+    "type": "3"
+  },
+  {
+    "longName": "Rocherlea to Launceston City",
+    "shortName": "115",
+    "type": "3"
+  },
+  {
+    "longName": "Alanvale and Mayfield to Launceston City",
+    "shortName": "116",
+    "type": "3"
+  },
+  {
+    "longName": "Alanvale to Launceston City",
+    "shortName": "117",
+    "type": "3"
+  },
+  {
+    "longName": "Ravenswood to Launceston City",
+    "shortName": "120",
+    "type": "3"
+  },
+  {
+    "longName": "Waverley to Launceston City",
+    "shortName": "121",
+    "type": "3"
+  },
+  {
+    "longName": "St Leonards to Launceston City",
+    "shortName": "130",
+    "type": "3"
+  },
+  {
+    "longName": "St Leonards to Launceston City",
+    "shortName": "131",
+    "type": "3"
+  },
+  {
+    "longName": "Youngtown to Launceston City",
+    "shortName": "140",
+    "type": "3"
+  },
+  {
+    "longName": "Punchbowl to Launceston City",
+    "shortName": "141",
+    "type": "3"
+  },
+  {
+    "longName": "Punchbowl to Launceston City",
+    "shortName": "142",
+    "type": "3"
+  },
+  {
+    "longName": "Youngtown to Launceston City",
+    "shortName": "145",
+    "type": "3"
+  },
+  {
+    "longName": "Youngtown to Launceston City",
+    "shortName": "146",
+    "type": "3"
+  },
+  {
+    "longName": "South Launceston to Launceston City",
+    "shortName": "147",
+    "type": "3"
+  },
+  {
+    "longName": "West Riverside to Launceston City",
+    "shortName": "150",
+    "type": "3"
+  },
+  {
+    "longName": "North Riverside to Launceston City",
+    "shortName": "151",
+    "type": "3"
+  },
+  {
+    "longName": "West Riverside to Launceston City",
+    "shortName": "152",
+    "type": "3"
+  },
+  {
+    "longName": "Country Club to Launceston City",
+    "shortName": "160",
+    "type": "3"
+  },
+  {
+    "longName": "Blackstone Heights to Launceston City",
+    "shortName": "161",
+    "type": "3"
+  },
+  { "longName": "Hadspen to Launceston City", "shortName": "162", "type": "3" },
+  {
+    "longName": "Prospect Vale to Launceston City",
+    "shortName": "165",
+    "type": "3"
+  },
+  {
+    "longName": "Prospect Vale to Launceston City",
+    "shortName": "167",
+    "type": "3"
+  },
+  { "longName": "West Devonport Loop", "shortName": "170", "type": "3" },
+  { "longName": "West Devonport Loop", "shortName": "171", "type": "3" },
+  { "longName": "Don College to Devonport", "shortName": "172", "type": "3" },
+  { "longName": "Splash to Devonport", "shortName": "173", "type": "3" },
+  { "longName": "Stony Rise to Devonport", "shortName": "174", "type": "3" },
+  {
+    "longName": "East Devonport to Devonport",
+    "shortName": "175",
+    "type": "3"
+  },
+  { "longName": "Ambleside to Devonport", "shortName": "176", "type": "3" },
+  { "longName": "Latrobe to Devonport", "shortName": "178", "type": "3" },
+  { "longName": "Ulverstone to Devonport", "shortName": "180", "type": "3" },
+  {
+    "longName": "Ulverstone to West Ulverstone",
+    "shortName": "182",
+    "type": "3"
+  },
+  { "longName": "Port Sorell to Devonport", "shortName": "183", "type": "3" },
+  { "longName": "Sheffield to Devonport", "shortName": "184", "type": "3" },
+  { "longName": "Ulverstone to Burnie", "shortName": "190", "type": "3" },
+  {
+    "longName": "Emu Heights/Havenview to Burnie",
+    "shortName": "191",
+    "type": "3"
+  },
+  { "longName": "Acton/Montello to Burnie", "shortName": "192", "type": "3" },
+  { "longName": "Acton/Montello to Burnie", "shortName": "193", "type": "3" },
+  { "longName": "Burnie Loop - Clockwise", "shortName": "194", "type": "3" },
+  {
+    "longName": "Burnie Loop - Anti Clockwise",
+    "shortName": "195",
+    "type": "3"
+  },
+  { "longName": "Brooklyn to Burnie", "shortName": "196", "type": "3" },
+  { "longName": "Wynyard to Burnie", "shortName": "197", "type": "3" },
+  { "longName": "Sandy Bay to Hobart City", "shortName": "401", "type": "3" },
+  { "longName": "Sandy Bay to Hobart City", "shortName": "402", "type": "3" },
+  {
+    "longName": "Blackmans Bay to Hobart City",
+    "shortName": "407",
+    "type": "3"
+  },
+  {
+    "longName": "Blackmans Bay to Hobart City",
+    "shortName": "408",
+    "type": "3"
+  },
+  {
+    "longName": "Blackmans Bay to Hobart City",
+    "shortName": "409",
+    "type": "3"
+  },
+  { "longName": "Kingston to Hobart", "shortName": "410", "type": "3" },
+  { "longName": "Howden to Hobart", "shortName": "411", "type": "3" },
+  { "longName": "Margate to Hobart", "shortName": "412", "type": "3" },
+  { "longName": "Snug to Hobart", "shortName": "413", "type": "3" },
+  { "longName": "Woodbridge to Hobart", "shortName": "415", "type": "3" },
+  { "longName": "Middleton to Hobart", "shortName": "416", "type": "3" },
+  { "longName": "Gordonto Hobart", "shortName": "417", "type": "3" },
+  { "longName": "Margate to Hobart", "shortName": "422", "type": "3" },
+  { "longName": "Taroona to Hobart", "shortName": "426", "type": "3" },
+  {
+    "longName": "Blackmans Bay to Hobart City",
+    "shortName": "427",
+    "type": "3"
+  },
+  {
+    "longName": "Blackmans Bay to Hobart City",
+    "shortName": "428",
+    "type": "3"
+  },
+  { "longName": "Kingston to Hobart", "shortName": "429", "type": "3" },
+  { "longName": "Marlyn Road to Hobart", "shortName": "446", "type": "3" },
+  {
+    "longName": "Strickland Avenue to Hobart",
+    "shortName": "447",
+    "type": "3"
+  },
+  { "longName": "Fern Tree to Hobart", "shortName": "448", "type": "3" },
+  { "longName": "Fern Tree to Hobart", "shortName": "449", "type": "3" },
+  {
+    "longName": "Mount Nelson to Hobart City",
+    "shortName": "457",
+    "type": "3"
+  },
+  {
+    "longName": "Mount Nelson to Hobart City",
+    "shortName": "458",
+    "type": "3"
+  },
+  { "longName": "Blackmans Bay to Glenorchy", "shortName": "500", "type": "3" },
+  { "longName": "University to Glenorchy", "shortName": "501", "type": "3" },
+  { "longName": "Glenorchy to Hobart", "shortName": "502", "type": "3" },
+  { "longName": "Tolosa Park to Hobart City", "shortName": "503", "type": "3" },
+  {
+    "longName": "Jackson Street to Hobart City",
+    "shortName": "504",
+    "type": "3"
+  },
+  {
+    "longName": "Austins Ferry to Hobart City",
+    "shortName": "510",
+    "type": "3"
+  },
+  { "longName": "Claremont to Hobart City", "shortName": "511", "type": "3" },
+  {
+    "longName": "Cadbury Estate to Hobart City",
+    "shortName": "512",
+    "type": "3"
+  },
+  { "longName": "Chigwell to Hobart City", "shortName": "513", "type": "3" },
+  { "longName": "Bridgewater to Hobart City", "shortName": "520", "type": "3" },
+  { "longName": "Brighton to Hobart City", "shortName": "521", "type": "3" },
+  { "longName": "Gagebrook to Hobart City", "shortName": "522", "type": "3" },
+  { "longName": "Bridgewater to Glenorchy", "shortName": "530", "type": "3" },
+  {
+    "longName": "Mount Stuart to Hobart City",
+    "shortName": "540",
+    "type": "3"
+  },
+  {
+    "longName": "Metro Springfield to Hobart City",
+    "shortName": "541",
+    "type": "3"
+  },
+  {
+    "longName": "Glenorchy Metro Springfield",
+    "shortName": "542",
+    "type": "3"
+  },
+  { "longName": "Glenorchy to Hobart City", "shortName": "550", "type": "3" },
+  {
+    "longName": "Lenah Valley to Hobart City",
+    "shortName": "551",
+    "type": "3"
+  },
+  {
+    "longName": "Lenah Valley to Hobart City",
+    "shortName": "552",
+    "type": "3"
+  },
+  {
+    "longName": "Lenah Valley to Hobart City",
+    "shortName": "553",
+    "type": "3"
+  },
+  { "longName": "Glenorchy to Hobart City", "shortName": "560", "type": "3" },
+  { "longName": "Glenorchy to Hobart City", "shortName": "561", "type": "3" },
+  {
+    "longName": "Metro Springfield to Hobart City",
+    "shortName": "562",
+    "type": "3"
+  },
+  { "longName": "University to Shoreline", "shortName": "601", "type": "3" },
+  {
+    "longName": "Tranmere to Glenorchy LIMITED STOPS",
+    "shortName": "605",
+    "type": "3"
+  },
+  { "longName": "Shoreline to Hobart City", "shortName": "606", "type": "3" },
+  { "longName": "Tranmere to Hobart City", "shortName": "614", "type": "3" },
+  { "longName": "Tranmere to Hobart City", "shortName": "615", "type": "3" },
+  { "longName": "Tranmere to Hobart City", "shortName": "616", "type": "3" },
+  {
+    "longName": "Clarendon Vale to Hobart City",
+    "shortName": "624",
+    "type": "3"
+  },
+  {
+    "longName": "Clarendon Vale to Hobart City",
+    "shortName": "625",
+    "type": "3"
+  },
+  {
+    "longName": "Roches Beach to Hobart City",
+    "shortName": "634",
+    "type": "3"
+  },
+  {
+    "longName": "Seven Mile Beach to Hobart City",
+    "shortName": "635",
+    "type": "3"
+  },
+  { "longName": "Opossum Bay to Hobart City", "shortName": "646", "type": "3" },
+  { "longName": "Mornington to Hobart City", "shortName": "654", "type": "3" },
+  { "longName": "Mornington to Hobart City", "shortName": "655", "type": "3" },
+  {
+    "longName": "Seven Mile Beach to Hobart City",
+    "shortName": "664",
+    "type": "3"
+  },
+  {
+    "longName": "Seven Mile Beach to Hobart City",
+    "shortName": "665",
+    "type": "3"
+  },
+  { "longName": "Rosny Park to Hobart City", "shortName": "676", "type": "3" },
+  { "longName": "Geilston Bay to Rosny Park", "shortName": "684", "type": "3" },
+  {
+    "longName": "Geilston Bay to Hobart City",
+    "shortName": "685",
+    "type": "3"
+  },
+  { "longName": "Glenorchy to Rosny Park", "shortName": "694", "type": "3" },
+  { "longName": "Risdon Vale to Hobart City", "shortName": "695", "type": "3" },
+  { "longName": "Bridgewater to Rosny Park", "shortName": "696", "type": "3" },
+  { "longName": "Launceston to Hobart", "shortName": "700", "type": "3" },
+  { "longName": "Launceston to Hobart", "shortName": "702", "type": "3" },
+  { "longName": "Devonport to Launceston", "shortName": "705", "type": "3" },
+  {
+    "longName": "NW Express Burnie to Devonport",
+    "shortName": "708",
+    "type": "3"
+  },
+  { "longName": "Hobart College to Kingston", "shortName": "709", "type": "3" },
+  { "longName": "Hobart to Huonville", "shortName": "710", "type": "3" },
+  { "longName": "Kingston to Ranelagh", "shortName": "711", "type": "3" },
+  { "longName": "Ranelagh to Hobart", "shortName": "712", "type": "3" },
+  { "longName": "Cygnet to Hobart", "shortName": "714", "type": "3" },
+  { "longName": "Cygnet to Kingston", "shortName": "715", "type": "3" },
+  { "longName": "Geeveston to Hobart", "shortName": "716", "type": "3" },
+  { "longName": "Dover to Hobart", "shortName": "718", "type": "3" },
+  { "longName": "Dover to Hobart", "shortName": "719", "type": "3" },
+  { "longName": "New Norfolk to Glenorchy", "shortName": "720", "type": "3" },
+  { "longName": "New Norfolk to Hobart City", "shortName": "722", "type": "3" },
+  { "longName": "Richmond to Hobart", "shortName": "725", "type": "3" },
+  { "longName": "Campania to Hobart", "shortName": "726", "type": "3" },
+  { "longName": "Sorell to Hobart", "shortName": "731", "type": "3" },
+  { "longName": "Carlton to Hobart", "shortName": "732", "type": "3" },
+  { "longName": "Nubeena to Hobart", "shortName": "734", "type": "3" },
+  { "longName": "Swansea to Hobart", "shortName": "736", "type": "3" },
+  { "longName": "Bicheno to Hobart", "shortName": "737", "type": "3" },
+  { "longName": "St Helens to Launceston", "shortName": "740", "type": "3" },
+  { "longName": "St Marys to Bicheno", "shortName": "742", "type": "3" },
+  { "longName": "Coles Bay to Bicheno", "shortName": "743", "type": "3" },
+  { "longName": "Coles Bay to St Helens", "shortName": "744", "type": "3" },
+  { "longName": "Coles Bay to St Marys", "shortName": "745", "type": "3" },
+  { "longName": "Bicheno to St Helens", "shortName": "746", "type": "3" },
+  { "longName": "West Coast to Burnie", "shortName": "747", "type": "3" },
+  { "longName": "Strahan to Queenstown", "shortName": "748", "type": "3" },
+  { "longName": "Strahan to Quenstown", "shortName": "748", "type": "3" },
+  { "longName": "Mole Creek to Launceston", "shortName": "762", "type": "3" },
+  { "longName": "Smithton to Burnie", "shortName": "768", "type": "3" },
+  { "longName": "George Town to Launceston", "shortName": "770", "type": "3" },
+  { "longName": "Low Head to Launceston", "shortName": "771", "type": "3" },
+  { "longName": "Low Head to Launceston", "shortName": "772", "type": "3" },
+  { "longName": "Scottsdale to Launceston", "shortName": "775", "type": "3" },
+  { "longName": "Bridport to Launceston", "shortName": "776", "type": "3" },
+  { "longName": "Derby to Launceston", "shortName": "777", "type": "3" },
+  { "longName": "Legana to Launceston", "shortName": "780", "type": "3" },
+  {
+    "longName": "North Riverside to Launceston",
+    "shortName": "781",
+    "type": "3"
+  },
+  { "longName": "Legana to Launceston", "shortName": "782", "type": "3" },
+  { "longName": "Rowella to Launceston", "shortName": "784", "type": "3" },
+  { "longName": "Exeter to Launceston", "shortName": "785", "type": "3" },
+  { "longName": "Beaconsfield to Launceston", "shortName": "787", "type": "3" },
+  { "longName": "Beauty Point to Launceston", "shortName": "788", "type": "3" },
+  { "longName": "Evandale to Launceston", "shortName": "792", "type": "3" },
+  { "longName": "Longford to Launceston", "shortName": "794", "type": "3" },
+  { "longName": "Cressy to Launceston", "shortName": "795", "type": "3" },
+  { "longName": "Cressy to Launceston", "shortName": "796", "type": "3" },
+  { "longName": "Derwent Ferry", "shortName": "F2", "type": "4" },
+  {
+    "longName": "Huntingfield to Hobart EXPRESS",
+    "shortName": "X01",
+    "type": "3"
+  },
+  {
+    "longName": "Glenorchy to Hobart City EXPRESS",
+    "shortName": "X02",
+    "type": "3"
+  },
+  {
+    "longName": "Blackmans Bay to Hobart  EXPRESS",
+    "shortName": "X07",
+    "type": "3"
+  },
+  {
+    "longName": "Huntingfield to Hobart EXPRESS",
+    "shortName": "X08",
+    "type": "3"
+  },
+  {
+    "longName": "Granton to Hobart City EXPRESS",
+    "shortName": "X10",
+    "type": "3"
+  },
+  {
+    "longName": "Claremont to Hobart City EXPRESS",
+    "shortName": "X11",
+    "type": "3"
+  },
+  { "longName": "Snug to Hobart EXPRESS", "shortName": "X13", "type": "3" },
+  {
+    "longName": "Tranmere Express to Hobart City EXPRESS",
+    "shortName": "X15",
+    "type": "3"
+  },
+  {
+    "longName": "Tranmere Express to Hobart City EXPRESS",
+    "shortName": "X16",
+    "type": "3"
+  },
+  {
+    "longName": "Bridgewater to Hobart City EXPRESS",
+    "shortName": "X20",
+    "type": "3"
+  },
+  {
+    "longName": "Brighton to Hobart City EXPRESS",
+    "shortName": "X21",
+    "type": "3"
+  },
+  {
+    "longName": "New Norfolk to Hobart Express",
+    "shortName": "X22",
+    "type": "3"
+  },
+  {
+    "longName": "New Norfolk to Hobart Super express",
+    "shortName": "X23",
+    "type": "3"
+  },
+  {
+    "longName": "Bridgewater to Hobart City EXPRESS",
+    "shortName": "X30",
+    "type": "3"
+  },
+  { "longName": "Sorell to Hobart Express", "shortName": "X31", "type": "3" },
+  { "longName": "Carlton to Hobart Express", "shortName": "X32", "type": "3" },
+  { "longName": "Hobart to Sorell Express", "shortName": "X33", "type": "3" },
+  {
+    "longName": "Roches Beach to Hobart City EXPRESS",
+    "shortName": "X34",
+    "type": "3"
+  },
+  {
+    "longName": "Glenorchy to Hobart City EXPRESS",
+    "shortName": "X42",
+    "type": "3"
+  },
+  {
+    "longName": "Opossum Bay to Hobart City EXPRESS",
+    "shortName": "X44",
+    "type": "3"
+  },
+  {
+    "longName": "Glenorchy to Hobart City EXPRESS",
+    "shortName": "X50",
+    "type": "3"
+  },
+  {
+    "longName": "Mount Nelson to Hobart City EXPRESS",
+    "shortName": "X58",
+    "type": "3"
+  },
+  {
+    "longName": "Seven Mile Beach to Hobart City EXPRESS",
+    "shortName": "X64",
+    "type": "3"
+  },
+  {
+    "longName": "Seven Mile Beach to Hobart City EXPRESS",
+    "shortName": "X65",
+    "type": "3"
+  },
+  {
+    "longName": "Huonville to Hobart EXPRESS",
+    "shortName": "X710",
+    "type": "3"
+  }
+]

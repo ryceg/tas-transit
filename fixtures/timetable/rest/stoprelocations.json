@@ -1,0 +1,11 @@
+[
+  {
+    "location": {
+      "latitude": -42.97564237812212,
+      "longitude": 147.30894097282172
+    },
+    "validTo": 1761868740000,
+    "validFrom": 1753920000000,
+    "stopCode": "place_intkin"
+  }
+]

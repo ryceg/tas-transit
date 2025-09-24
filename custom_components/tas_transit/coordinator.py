@@ -25,8 +25,7 @@ from .const import (
 )
 from .vehicle import Vehicle, VehicleManager
 from .websocket_client import TasTransitWebSocketClient
-from .gtfs_manager import GTFSManager
-from .shapes import RouteShapeManager
+from .shapes import ShapeManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -62,17 +61,16 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         self._tracked_vehicle_sensors: set[str] = set()
         self._websocket_started = False
 
-        # GTFS data management
-        self.gtfs_manager = GTFSManager(hass.config.config_dir)
-        self.route_shape_manager = RouteShapeManager(self.gtfs_manager)
-        self._gtfs_initialized = False
+        # Route shapes management
+        self.shape_manager = ShapeManager(self.api)
+        self._shapes_initialized = False
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API endpoint."""
         try:
-            # Initialize GTFS data if not already done
-            if not self._gtfs_initialized:
-                await self._initialize_gtfs_data()
+            # Initialize shapes data if not already done
+            if not self._shapes_initialized:
+                await self._initialize_shapes_data()
 
             # Start WebSocket client if not already started
             if not self._websocket_started:
@@ -88,8 +86,7 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                 departures = await self.api.get_stop_departures(stop_id)
                 _LOGGER.debug("Received %d departures for stop %s", len(departures), stop_id)
 
-                # Enrich departures with GTFS data
-                enriched_departures = self._enrich_departures_with_gtfs(departures)
+                enriched_departures = departures
 
                 # Process the departures data for this stop with filters
                 processed_data = self._process_departures(enriched_departures, stop_config)
@@ -324,70 +321,53 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
 
         self._websocket_started = True
 
-    async def _initialize_gtfs_data(self) -> None:
-        """Initialize GTFS data manager."""
+    async def _initialize_shapes_data(self) -> None:
+        """Initialize route shapes data manager."""
         try:
-            _LOGGER.info("Initializing GTFS data manager")
-            success = await self.gtfs_manager.initialize()
+            _LOGGER.info("Initializing route shapes data")
+            success = await self.shape_manager.initialize()
             if success:
-                _LOGGER.info("GTFS data initialized successfully")
-                self._gtfs_initialized = True
+                _LOGGER.info("Route shapes data initialized successfully")
+                self._shapes_initialized = True
             else:
-                _LOGGER.warning("GTFS data initialization failed - continuing without GTFS features")
-                self._gtfs_initialized = False
+                _LOGGER.warning("Route shapes data initialization failed - continuing without shapes features")
+                self._shapes_initialized = False
         except Exception as err:
-            _LOGGER.error("Error initializing GTFS data: %s", err)
-            self._gtfs_initialized = False
+            _LOGGER.error("Error initializing route shapes data: %s", err)
+            self._shapes_initialized = False
 
-    def _enrich_departures_with_gtfs(self, departures: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Enrich departure data with GTFS information.
-
-        Args:
-            departures: List of departure data from real-time API
-
-        Returns:
-            List of enriched departure data with GTFS fields
-        """
-        if not self.gtfs_manager.is_data_available:
-            return departures
-
-        enriched_departures = []
-        for departure in departures:
-            enriched = self.gtfs_manager.enrich_departure_data(departure)
-            enriched_departures.append(enriched)
-
-        return enriched_departures
 
     def get_active_route_shapes(self) -> dict[str, dict[str, Any]]:
-        """Get route shape data for active trips.
+        """Get route shape data for active routes.
 
         Returns:
-            Dict mapping shape_id to route visualization data
+            Dict mapping route segment to visualization data
         """
-        if not self.gtfs_manager.is_data_available:
+        if not self.shape_manager.is_data_available:
             return {}
 
-        # Get all active trip IDs
-        active_trip_ids = []
+        # Get all route segments as GeoJSON features
+        route_segments = self.shape_manager.get_all_route_segments()
 
-        # From current departures data
-        if hasattr(self, 'data') and self.data:
-            for stop_data in self.data.values():
-                departures = stop_data.get("departures", [])
-                for departure in departures:
-                    trip_id = departure.get("tripId")
-                    if trip_id:
-                        active_trip_ids.append(trip_id)
+        # Convert to the expected format
+        shapes_data = {}
 
-        # From active vehicles
-        for vehicle in self.vehicle_manager.get_active_vehicles():
-            if vehicle.trip_id:
-                active_trip_ids.append(vehicle.trip_id)
+        for i, segment in enumerate(route_segments):
+            segment_id = f"segment_{i}_{segment['properties']['start_stop_id']}_{segment['properties']['end_stop_id']}"
 
-        # Remove duplicates
-        active_trip_ids = list(set(active_trip_ids))
+            shapes_data[segment_id] = {
+                "coordinates": segment["geometry"]["coordinates"],
+                "start_stop_id": segment["properties"]["start_stop_id"],
+                "end_stop_id": segment["properties"]["end_stop_id"],
+                "start_stop_name": segment["properties"]["start_stop_name"],
+                "end_stop_name": segment["properties"]["end_stop_name"],
+                "bounds": self.shape_manager.get_route_bounds_for_stops(
+                    segment["properties"]["start_stop_id"],
+                    segment["properties"]["end_stop_id"]
+                ),
+            }
 
-        return self.route_shape_manager.get_active_route_shapes(active_trip_ids)
+        return shapes_data
 
     def _handle_vehicle_update(self, vehicle_data: dict[str, Any]) -> None:
         """Handle vehicle update from WebSocket."""
@@ -517,9 +497,7 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         if hasattr(self, 'websocket_client'):
             await self.websocket_client.disconnect()
 
-        # Close GTFS manager session
-        if hasattr(self, 'gtfs_manager'):
-            await self.gtfs_manager.close()
+        # Shape manager doesn't need explicit cleanup as it uses the API session
 
         # Close API session
         await self.api.close()

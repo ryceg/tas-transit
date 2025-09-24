@@ -8,6 +8,7 @@ API_BASE_URL: Final = "https://real-time.transport.tas.gov.au/timetable/rest"
 API_STOPS_SEARCH: Final = f"{API_BASE_URL}/stops/searchbylocation"
 API_STOPDISPLAYS: Final = f"{API_BASE_URL}/stopdisplays"
 API_STOPSCHEDULE: Final = f"{API_BASE_URL}/currentstopschedule"
+API_SHAPES: Final = f"{API_BASE_URL}/shapes"
 API_TIMEOUT: Final = 30
 
 # Update Intervals
@@ -49,8 +50,3 @@ VEHICLE_FALLBACK_TIMEOUT: Final = 3600              # 60 minutes absolute fallba
 FILTER_MODE_INCLUDE: Final = "include"
 FILTER_MODE_EXCLUDE: Final = "exclude"
 
-# GTFS Configuration
-GTFS_HOBART_URL: Final = "http://www.metrotas.com.au/wp-content/uploads/transit/Hobart/google_transit.zip"
-GTFS_CACHE_DIR: Final = "gtfs_cache"
-GTFS_REFRESH_INTERVAL: Final = 86400  # 24 hours in seconds
-GTFS_DOWNLOAD_TIMEOUT: Final = 300  # 5 minutes for GTFS download

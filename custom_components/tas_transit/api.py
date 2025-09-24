@@ -9,11 +9,11 @@ from typing import Any
 import aiohttp
 
 try:
-    from .const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_STOPSCHEDULE, API_TIMEOUT
+    from .const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_STOPSCHEDULE, API_SHAPES, API_TIMEOUT
     from .exceptions import TasTransitApiException
 except ImportError:
     # For standalone testing
-    from const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_STOPSCHEDULE, API_TIMEOUT
+    from const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_STOPSCHEDULE, API_SHAPES, API_TIMEOUT
     from exceptions import TasTransitApiException
 
 _LOGGER = logging.getLogger(__name__)
@@ -233,3 +233,31 @@ class TasTransitApi:
         except Exception as err:
             _LOGGER.error("Unexpected error fetching schedule for stop %s: %s", stop_id, err)
             raise TasTransitApiError(f"Error fetching schedule for stop {stop_id}") from err
+
+    async def get_shapes(self) -> dict[str, Any] | None:
+        """Get route shapes data from the shapes endpoint.
+
+        Returns:
+            Route shapes data with links between stops or None if request fails
+        """
+        _LOGGER.debug("Fetching shapes data from: %s", API_SHAPES)
+
+        try:
+            session = await self._get_session()
+            async with asyncio.timeout(API_TIMEOUT):
+                async with session.get(API_SHAPES) as response:
+                    response.raise_for_status()
+                    data = await response.json()
+
+                    _LOGGER.debug("Received shapes data with %d links", len(data.get("links", [])))
+                    return data
+
+        except asyncio.TimeoutError as err:
+            _LOGGER.error("Timeout fetching shapes data: %s", err)
+            raise TasTransitApiTimeoutError("Timeout fetching shapes data") from err
+        except aiohttp.ClientError as err:
+            _LOGGER.error("HTTP error fetching shapes data: %s", err)
+            raise TasTransitApiConnectionError(f"Connection error fetching shapes data") from err
+        except Exception as err:
+            _LOGGER.error("Unexpected error fetching shapes data: %s", err)
+            raise TasTransitApiError(f"Error fetching shapes data") from err

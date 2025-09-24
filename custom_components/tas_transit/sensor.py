@@ -400,23 +400,6 @@ class TasTransitTimeToNextBusSensor(TasTransitSensorBase):
                 "estimated_minutes_until": next_departure.get("estimatedMinutesUntilDeparture"),
             })
             
-            # Add GTFS-sourced attributes if available
-            if next_departure.get("wheelchair_accessible") is not None:
-                attributes["wheelchair_accessible"] = next_departure.get("wheelchair_accessible")
-                attributes["wheelchair_accessible_text"] = next_departure.get("wheelchair_accessible_text", "")
-            
-            if next_departure.get("trip_headsign"):
-                attributes["trip_headsign"] = next_departure.get("trip_headsign")
-            
-            if next_departure.get("route_color"):
-                attributes["route_color"] = next_departure.get("route_color")
-                attributes["route_text_color"] = next_departure.get("route_text_color", "")
-            
-            if next_departure.get("route_long_name"):
-                attributes["route_long_name"] = next_departure.get("route_long_name")
-            
-            if next_departure.get("shape_id"):
-                attributes["shape_id"] = next_departure.get("shape_id")
         
         # Add vehicle tracking information if available
         if stop_data:
@@ -431,9 +414,14 @@ class TasTransitTimeToNextBusSensor(TasTransitSensorBase):
                 route_shapes = self.coordinator.get_active_route_shapes()
                 if route_shapes:
                     attributes["route_shapes"] = route_shapes
+                    attributes["route_shapes_count"] = len(route_shapes)
             except Exception as err:
                 # Don't fail sensor update if route shapes can't be loaded
                 _LOGGER.debug("Could not load route shapes: %s", err)
+
+        # Add route shapes availability info
+        if hasattr(self.coordinator, 'shape_manager'):
+            attributes["shapes_available"] = self.coordinator.shape_manager.is_data_available
         
         return attributes
 

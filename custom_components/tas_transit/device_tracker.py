@@ -28,25 +28,20 @@ async def async_setup_entry(
     # Track active entities for removal
     coordinator._device_tracker_entities = {}
 
-    # Create device trackers for each configured bus stop
-    from .const import CONF_STOPS, CONF_STOP_ID, CONF_STOP_NAME
-    stop_trackers = []
+    # Create device tracker for the configured bus stop
+    from .const import CONF_STOP_ID, CONF_STOP_NAME
+    stop_id = config_entry.data[CONF_STOP_ID]
+    stop_name = config_entry.data[CONF_STOP_NAME]
     
-    for stop_config in config_entry.data[CONF_STOPS]:
-        stop_id = stop_config[CONF_STOP_ID]
-        stop_name = stop_config[CONF_STOP_NAME]
-        
-        stop_tracker = TasTransitStopTracker(
-            coordinator=coordinator,
-            config_entry=config_entry,
-            stop_id=stop_id,
-            stop_name=stop_name,
-        )
-        stop_trackers.append(stop_tracker)
+    stop_tracker = TasTransitStopTracker(
+        coordinator=coordinator,
+        config_entry=config_entry,
+        stop_id=stop_id,
+        stop_name=stop_name,
+    )
     
-    if stop_trackers:
-        async_add_entities(stop_trackers)
-        _LOGGER.debug("Added %d bus stop trackers", len(stop_trackers))
+    async_add_entities([stop_tracker])
+    _LOGGER.debug("Added bus stop tracker for %s", stop_id)
 
     # Store the callback for adding new vehicle entities
     coordinator.set_vehicle_entity_callback(
@@ -111,7 +106,6 @@ class TasTransitVehicleTracker(CoordinatorEntity, TrackerEntity):
             "name": f"Bus {vehicle_id}",
             "manufacturer": "Tasmanian Government",
             "model": "Transit Vehicle",
-            "via_device": (DOMAIN, f"{config_entry.entry_id}_coordinator"),
         }
 
     @property

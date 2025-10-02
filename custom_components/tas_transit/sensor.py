@@ -38,18 +38,14 @@ async def async_setup_entry(
     """Set up the Tasmanian Transport sensor platform."""
     coordinator = hass.data[DOMAIN][config_entry.entry_id]["coordinator"]
     
-    sensors = []
+    stop_id = config_entry.data[CONF_STOP_ID]
+    stop_name = config_entry.data[CONF_STOP_NAME]
     
-    # Create sensors for each configured stop
-    for stop_config in config_entry.data[CONF_STOPS]:
-        stop_id = stop_config[CONF_STOP_ID]
-        stop_name = stop_config[CONF_STOP_NAME]
-        
-        sensors.extend([
-            TasTransitNextRouteSensor(coordinator, config_entry, stop_id, stop_name),
-            TasTransitNextDestinationSensor(coordinator, config_entry, stop_id, stop_name),
-            TasTransitTimeToNextBusSensor(coordinator, config_entry, stop_id, stop_name),
-        ])
+    sensors = [
+        TasTransitNextRouteSensor(coordinator, config_entry, stop_id, stop_name),
+        TasTransitNextDestinationSensor(coordinator, config_entry, stop_id, stop_name),
+        TasTransitTimeToNextBusSensor(coordinator, config_entry, stop_id, stop_name),
+    ]
     
     async_add_entities(sensors)
     
@@ -119,27 +115,18 @@ class TasTransitSensorBase(CoordinatorEntity, SensorEntity):
         if not self.coordinator.data:
             return None
         return self.coordinator.data.get(self.stop_id)
-    
-    @property
-    def stop_config(self) -> dict[str, Any] | None:
-        """Get the configuration for this stop."""
-        for stop_config in self.config_entry.data[CONF_STOPS]:
-            if stop_config[CONF_STOP_ID] == self.stop_id:
-                return stop_config
-        return None
-    
 
     def _get_filter_attributes(self) -> dict[str, Any]:
         """Get filter-related attributes."""
-        stop_config = self.stop_config
-        if not stop_config:
+        options = self.config_entry.options
+        if not options:
             return {}
         
         attributes = {}
         
-        line_filters = stop_config.get(CONF_LINE_FILTERS, [])
-        destination_filters = stop_config.get(CONF_DESTINATION_FILTERS, [])
-        filter_mode = stop_config.get(CONF_FILTER_MODE)
+        line_filters = options.get(CONF_LINE_FILTERS, [])
+        destination_filters = options.get(CONF_DESTINATION_FILTERS, [])
+        filter_mode = options.get(CONF_FILTER_MODE)
         
         if line_filters:
             attributes["route_filters"] = line_filters

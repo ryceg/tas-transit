@@ -19,19 +19,7 @@ PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.DEVICE_TRACKER]
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Tasmanian Transport from a config entry."""
-    from homeassistant.helpers.device_registry import async_get as async_get_device_registry
-
     hass.data.setdefault(DOMAIN, {})
-
-    # Create coordinator device for vehicle tracking
-    device_registry = async_get_device_registry(hass)
-    coordinator_device = device_registry.async_get_or_create(
-        config_entry_id=entry.entry_id,
-        identifiers={(DOMAIN, f"{entry.entry_id}_coordinator")},
-        name="Tasmanian Transport Coordinator",
-        manufacturer="Tasmanian Government",
-        model="Transit Coordinator",
-    )
 
     coordinator = TasTransitDataUpdateCoordinator(
         hass,
@@ -45,7 +33,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data[DOMAIN][entry.entry_id] = {
         "coordinator": coordinator,
-        "coordinator_device": coordinator_device,
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

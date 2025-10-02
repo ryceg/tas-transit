@@ -76,103 +76,89 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
             if not self._websocket_started:
                 await self._start_websocket_client()
 
-            stops_data = {}
-            min_time_to_departure = None
+            stop_id = self.config_entry.data[CONF_STOP_ID]
+            _LOGGER.debug("Fetching departures for stop %s", stop_id)
+            departures = await self.api.get_stop_departures(stop_id)
+            _LOGGER.debug("Received %d departures for stop %s", len(departures), stop_id)
 
-            # Process each configured stop
-            for stop_config in self.config_entry.data[CONF_STOPS]:
-                stop_id = stop_config[CONF_STOP_ID]
-                _LOGGER.debug("Fetching departures for stop %s", stop_id)
-                departures = await self.api.get_stop_departures(stop_id)
-                _LOGGER.debug("Received %d departures for stop %s", len(departures), stop_id)
+            enriched_departures = departures
 
-                enriched_departures = departures
+            # Process the departures data for this stop with filters
+            processed_data = self._process_departures(enriched_departures, self.config_entry.options)
 
-                # Process the departures data for this stop with filters
-                processed_data = self._process_departures(enriched_departures, stop_config)
+            # Add vehicle tracking data to processed data
+            processed_data["vehicles"] = self._get_vehicles_for_stop(stop_id, processed_data.get("departures", []))
 
-                # Add vehicle tracking data to processed data
-                processed_data["vehicles"] = self._get_vehicles_for_stop(stop_id, processed_data.get("departures", []))
+            # Fetch stop location data from currentstopschedule API
+            stop_location_data = await self._get_stop_location(stop_id)
+            if stop_location_data:
+                processed_data["stop_location"] = stop_location_data
 
-                # Fetch stop location data from currentstopschedule API
-                stop_location_data = await self._get_stop_location(stop_id)
-                if stop_location_data:
-                    processed_data["stop_location"] = stop_location_data
+            _LOGGER.debug("Processed data for stop %s: next_departure=%s, time_to_departure=%s, vehicles=%d, has_location=%s",
+                         stop_id, processed_data.get("next_departure") is not None, processed_data.get("time_to_departure"),
+                         len(processed_data.get("vehicles", [])), processed_data.get("stop_location") is not None)
 
-                stops_data[stop_id] = processed_data
-                _LOGGER.debug("Processed data for stop %s: next_departure=%s, time_to_departure=%s, vehicles=%d, has_location=%s",
-                             stop_id, processed_data.get("next_departure") is not None, processed_data.get("time_to_departure"),
-                             len(processed_data.get("vehicles", [])), processed_data.get("stop_location") is not None)
-
-                # Track the earliest departure across all stops
-                time_to_departure = processed_data.get("time_to_departure")
-                if time_to_departure is not None:
-                    if min_time_to_departure is None or time_to_departure < min_time_to_departure:
-                        min_time_to_departure = time_to_departure
+            # Track the earliest departure
+            time_to_departure = processed_data.get("time_to_departure")
 
             # Schedule next update based on closest departure
-            await self._schedule_next_update(min_time_to_departure)
+            await self._schedule_next_update(time_to_departure)
 
             # Mark vehicles as completed if they no longer appear in API data
-            self._mark_missing_vehicles_as_completed(stops_data)
+            self._mark_missing_vehicles_as_completed({stop_id: processed_data})
+
+            # Clean up expired vehicles
+            removed_count = self.vehicle_manager.cleanup_expired_vehicles()
+            if removed_count > 0:
+                _LOGGER.debug("Cleaned up %d expired vehicles", removed_count)
 
             # Update vehicle entity tracking
             await self._update_vehicle_entities()
 
-            return stops_data
+            return {stop_id: processed_data}
 
         except TasTransitApiError as err:
             _LOGGER.error("API error: %s", err)
             raise UpdateFailed(f"Error communicating with API: {err}") from err
 
-    def _apply_filters(self, departures: list[dict[str, Any]], stop_config: dict[str, Any]) -> list[dict[str, Any]]:
+    def _apply_filters(self, departures: list[dict[str, Any]], options: dict[str, Any]) -> list[dict[str, Any]]:
         """Apply line number and destination filters to departures."""
-        line_filters = stop_config.get(CONF_LINE_FILTERS, [])
-        destination_filters = stop_config.get(CONF_DESTINATION_FILTERS, [])
-        filter_mode = stop_config.get(CONF_FILTER_MODE, FILTER_MODE_INCLUDE)
+        line_filters = options.get(CONF_LINE_FILTERS, [])
+        destination_filters = options.get(CONF_DESTINATION_FILTERS, [])
+        filter_mode = options.get(CONF_FILTER_MODE, FILTER_MODE_INCLUDE)
 
-        # If no filters configured, return all departures
         if not line_filters and not destination_filters:
             return departures
 
+        original_count = len(departures)
         filtered_departures = []
 
         for departure in departures:
             line_number = departure.get("lineNumber", "").strip()
             destination = departure.get("destinationName", "").strip()
 
-            # Check if departure matches filters
             line_match = self._matches_line_filter(line_number, line_filters)
             destination_match = self._matches_destination_filter(destination, destination_filters)
 
-            # Determine if departure should be included
             if filter_mode == FILTER_MODE_INCLUDE:
-                # Include if matches any line filter OR any destination filter (when filters are provided)
-                should_include = False
-                if line_filters and line_match:
-                    should_include = True
-                if destination_filters and destination_match:
-                    should_include = True
-                # If only one type of filter is configured, only check that type
                 if line_filters and not destination_filters:
                     should_include = line_match
-                elif destination_filters and not line_filters:
+                elif not line_filters and destination_filters:
                     should_include = destination_match
+                else:
+                    should_include = line_match or destination_match
             else:  # FILTER_MODE_EXCLUDE
-                # Exclude if matches any line filter OR any destination filter
-                should_exclude = False
-                if line_filters and line_match:
-                    should_exclude = True
-                if destination_filters and destination_match:
-                    should_exclude = True
-                should_include = not should_exclude
+                if line_filters and not destination_filters:
+                    should_include = not line_match
+                elif not line_filters and destination_filters:
+                    should_include = not destination_match
+                else:
+                    should_include = not (line_match or destination_match)
 
             if should_include:
                 filtered_departures.append(departure)
-                _LOGGER.debug("Including departure: line=%s, dest=%s", line_number, destination)
-            else:
-                _LOGGER.debug("Filtering out departure: line=%s, dest=%s", line_number, destination)
 
+        _LOGGER.debug("Filtered %%d departures down to %%d", original_count, len(filtered_departures))
         return filtered_departures
 
     def _matches_line_filter(self, line_number: str, line_filters: list[str]) -> bool:
@@ -201,14 +187,14 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                 return True
         return False
 
-    def _process_departures(self, departures: list[dict[str, Any]], stop_config: dict[str, Any]) -> dict[str, Any]:
+    def _process_departures(self, departures: list[dict[str, Any]], options: dict[str, Any]) -> dict[str, Any]:
         """Process departure data with optional filtering."""
         now = datetime.now()
 
         _LOGGER.debug("Processing %d raw departures", len(departures))
 
         # Apply filters if configured
-        filtered_departures = self._apply_filters(departures, stop_config)
+        filtered_departures = self._apply_filters(departures, options)
         _LOGGER.debug("After filtering: %d departures remaining", len(filtered_departures))
 
         # Filter departures to only include upcoming ones (non-cancelled, positive minutes)
@@ -223,8 +209,8 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Departure: line=%s, dest=%s, minutes_until=%s, cancelled=%s",
                          departure.get("lineNumber"), departure.get("destinationName"), minutes_until, cancelled)
 
-            # Include if not cancelled and has future departure time
-            if not cancelled and minutes_until is not None and minutes_until >= 0:
+            # Include if not cancelled and has future departure time (up to 10 mins ago)
+            if not cancelled and minutes_until is not None and minutes_until >= -10:
                 upcoming_departures.append(departure)
 
         _LOGGER.debug("Found %d upcoming departures after filtering", len(upcoming_departures))
@@ -283,7 +269,7 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
     async def _schedule_next_update(self, min_time_to_departure: int | None) -> None:
         """Adjust update interval based on departure times."""
         # Determine update interval based on closest departure
-        if min_time_to_departure is not None and min_time_to_departure <= UPDATE_INTERVAL_THRESHOLD:
+        if min_time_to_departure is not None and -10 <= min_time_to_departure <= UPDATE_INTERVAL_THRESHOLD:
             # Bus within threshold - use frequent updates
             interval = UPDATE_INTERVAL_FREQUENT
             self.logger.debug(
@@ -307,17 +293,16 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
             self.logger.debug("Updated coordinator interval to %d seconds", interval)
 
     async def _start_websocket_client(self) -> None:
-        """Start the WebSocket client and subscribe to configured stops."""
+        """Start the WebSocket client and subscribe to the configured stop."""
         _LOGGER.info("Starting WebSocket client for real-time vehicle tracking")
 
         # Start the WebSocket client
         await self.websocket_client.start()
 
-        # Subscribe to all configured stops
-        for stop_config in self.config_entry.data[CONF_STOPS]:
-            stop_id = stop_config[CONF_STOP_ID]
-            await self.websocket_client.subscribe_to_stop(stop_id)
-            _LOGGER.debug("Subscribed to WebSocket updates for stop %s", stop_id)
+        # Subscribe to the configured stop
+        stop_id = self.config_entry.data[CONF_STOP_ID]
+        await self.websocket_client.subscribe_to_stop(stop_id)
+        _LOGGER.debug("Subscribed to WebSocket updates for stop %s", stop_id)
 
         self._websocket_started = True
 

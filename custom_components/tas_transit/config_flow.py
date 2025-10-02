@@ -100,11 +100,62 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the initial step."""
-        # Check if integration already exists
-        existing_entries = self.hass.config_entries.async_entries(DOMAIN)
-        if existing_entries:
-            # If integration exists, show error directing user to options
-            return self.async_abort(reason="already_configured")
+        
+        errors: dict[str, str] = {}
+        description_placeholders = {
+            "transport_site_url": TRANSPORT_WEB_URL,
+            "stop_finder_url": TRANSPORT_WEB_URL + "7109023",
+            "instructions": "Stop IDs consist of your postcode followed by three digits (e.g., 7109023 for postcode 7109). To find your stop ID, visit the Tasmanian Transport website, search for your stop, and copy the ID from the URL.",
+        }
+
+        if user_input is not None:
+            # Set unique ID and abort if already exists
+            await self.async_set_unique_id(user_input[CONF_STOP_ID])
+            self._abort_if_unique_id_configured()
+            
+            try:
+                # Validate the stop ID and get stop information
+                api = TasTransitApi()
+                stop_info = await api.get_stop_info(user_input[CONF_STOP_ID])
+
+                if not stop_info:
+                    errors[CONF_STOP_ID] = "stop_not_found"
+                else:
+                    # Extract stop name from the API response
+                    stop_name = "Unknown Stop"
+                    if "stop" in stop_info and "name" in stop_info["stop"]:
+                        stop_name = stop_info["stop"]["name"]
+                    elif "name" in stop_info:
+                        stop_name = stop_info["name"]
+                    else:
+                        stop_name = f"Stop {user_input[CONF_STOP_ID]}"
+
+                    # Fetch schedule data to get available routes and destinations
+                    try:
+                        schedule_data = await api.get_stop_schedule(user_input[CONF_STOP_ID])
+                        if schedule_data:
+                            self._extract_filter_options(schedule_data)
+                        else:
+                            _LOGGER.warning("No schedule data returned for stop %s", user_input[CONF_STOP_ID])
+                    except Exception as e:
+                        _LOGGER.warning("Could not fetch schedule data for filter options: %s", e)
+                        # Continue anyway with empty options
+                    
+                    # Store stop info and proceed to filter configuration
+                    self._stop_id = user_input[CONF_STOP_ID]
+                    self._stop_name = stop_name
+                    return await self.async_step_filters()
+
+            except Exception as exception:
+                _LOGGER.exception("Unexpected exception: %s", exception)
+                errors["base"] = "unknown"
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=STEP_USER_DATA_SCHEMA,
+            errors=errors,
+            description_placeholders=description_placeholders,
+        )
             
         errors: dict[str, str] = {}
         description_placeholders = {
@@ -168,44 +219,25 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             destination_filters = user_input.get(CONF_DESTINATION_FILTERS, [])
             filter_mode = user_input.get(CONF_FILTER_MODE, FILTER_MODE_INCLUDE)
 
+            
             # Create the stop configuration
-            stop_config = {
+            data = {
                 CONF_STOP_ID: self._stop_id,
                 CONF_STOP_NAME: self._stop_name,
             }
 
             # Add filters if provided
             if line_filters:
-                stop_config[CONF_LINE_FILTERS] = line_filters
+                data[CONF_LINE_FILTERS] = line_filters
             if destination_filters:
-                stop_config[CONF_DESTINATION_FILTERS] = destination_filters
+                data[CONF_DESTINATION_FILTERS] = destination_filters
             if line_filters or destination_filters:
-                stop_config[CONF_FILTER_MODE] = filter_mode
+                data[CONF_FILTER_MODE] = filter_mode
 
-            # Check if this is adding to existing config or creating new
-            existing_entries = self.hass.config_entries.async_entries(DOMAIN)
-            if existing_entries:
-                # Adding to existing configuration
-                existing_config = existing_entries[0]
-                existing_data = dict(existing_config.data)
-                existing_data[CONF_STOPS].append(stop_config)
-
-                # Update the config entry
-                self.hass.config_entries.async_update_entry(
-                    existing_config,
-                    data=existing_data,
-                )
-
-                # Return abort to indicate we're done (don't create new entry)
-                return self.async_abort(reason="stop_added")
-            else:
-                # Creating new configuration
-                return self.async_create_entry(
-                    title="Tasmanian Transport",
-                    data={
-                        CONF_STOPS: [stop_config],
-                    },
-                )
+            return self.async_create_entry(
+                title=self._stop_name,
+                data=data,
+            )
 
         # Build dynamic filter schema based on available options
         filter_schema_dict = {}
@@ -251,13 +283,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class OptionsFlow(config_entries.OptionsFlow):
-    """Handle options flow for adding additional stops."""
+    """Handle an options flow for Tasmanian Transport."""
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
-        super().__init__()
-        self._stop_id: str | None = None
-        self._stop_name: str | None = None
+        self.config_entry = config_entry
+        self._stop_id: str = self.config_entry.data[CONF_STOP_ID]
+        self._stop_name: str = self.config_entry.data[CONF_STOP_NAME]
         self._available_routes: list[str] = []
         self._available_destinations: list[str] = []
 
@@ -272,65 +304,19 @@ class OptionsFlow(config_entries.OptionsFlow):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Manage the options."""
-        return self.async_show_menu(
-            step_id="init",
-            menu_options={"add_stop": "Add Another Stop"},
-        )
+        # Fetch schedule data to get available routes and destinations
+        try:
+            api = TasTransitApi()
+            schedule_data = await api.get_stop_schedule(self._stop_id)
+            if schedule_data:
+                self._extract_filter_options(schedule_data)
+            else:
+                _LOGGER.warning("No schedule data returned for stop %s", self._stop_id)
+        except Exception as e:
+            _LOGGER.warning("Could not fetch schedule data for filter options: %s", e)
+            # Continue anyway with empty options
 
-    async def async_step_add_stop(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
-        """Handle adding a new stop."""
-        errors: dict[str, str] = {}
-
-        if user_input is not None:
-            try:
-                # Validate the stop ID and get stop information
-                api = TasTransitApi()
-                stop_info = await api.get_stop_info(user_input[CONF_STOP_ID])
-
-                if not stop_info:
-                    errors[CONF_STOP_ID] = "stop_not_found"
-                else:
-                    # Extract stop name from the API response
-                    stop_name = "Unknown Stop"
-                    if "stop" in stop_info and "name" in stop_info["stop"]:
-                        stop_name = stop_info["stop"]["name"]
-                    elif "name" in stop_info:
-                        stop_name = stop_info["name"]
-                    else:
-                        stop_name = f"Stop {user_input[CONF_STOP_ID]}"
-
-                    # Fetch schedule data to get available routes and destinations
-                    try:
-                        schedule_data = await api.get_stop_schedule(user_input[CONF_STOP_ID])
-                        if schedule_data:
-                            self._extract_filter_options(schedule_data)
-                        else:
-                            _LOGGER.warning("No schedule data returned for stop %s", user_input[CONF_STOP_ID])
-                    except Exception as e:
-                        _LOGGER.warning("Could not fetch schedule data for filter options: %s", e)
-                        # Continue anyway with empty options
-
-                    # Store stop info and proceed to filter configuration
-                    self._stop_id = user_input[CONF_STOP_ID]
-                    self._stop_name = stop_name
-                    return await self.async_step_filters()
-
-            except Exception as exception:
-                _LOGGER.exception("Unexpected exception: %s", exception)
-                errors["base"] = "unknown"
-
-        return self.async_show_form(
-            step_id="add_stop",
-            data_schema=STEP_USER_DATA_SCHEMA,
-            errors=errors,
-            description_placeholders={
-                "transport_site_url": TRANSPORT_WEB_URL,
-                "stop_finder_url": TRANSPORT_WEB_URL + "7109023",
-                "instructions": "Stop IDs consist of your postcode followed by three digits (e.g., 7109023 for postcode 7109). To find your stop ID, visit the Tasmanian Transport website, search for your stop, and copy the ID from the URL.",
-            }
-        )
+        return await self.async_step_filters()
 
     async def async_step_filters(
         self, user_input: dict[str, Any] | None = None
@@ -342,43 +328,30 @@ class OptionsFlow(config_entries.OptionsFlow):
             destination_filters = user_input.get(CONF_DESTINATION_FILTERS, [])
             filter_mode = user_input.get(CONF_FILTER_MODE, FILTER_MODE_INCLUDE)
 
-            # Create the stop configuration
-            stop_config = {
-                CONF_STOP_ID: self._stop_id,
-                CONF_STOP_NAME: self._stop_name,
+            # Create the options dictionary
+            options = {
+                CONF_LINE_FILTERS: line_filters,
+                CONF_DESTINATION_FILTERS: destination_filters,
+                CONF_FILTER_MODE: filter_mode,
             }
 
-            # Add filters if provided
-            if line_filters:
-                stop_config[CONF_LINE_FILTERS] = line_filters
-            if destination_filters:
-                stop_config[CONF_DESTINATION_FILTERS] = destination_filters
-            if line_filters or destination_filters:
-                stop_config[CONF_FILTER_MODE] = filter_mode
-
-            # Add stop to existing configuration
-            new_data = dict(self.config_entry.data)
-            new_data[CONF_STOPS].append(stop_config)
-
-            return self.async_create_entry(
-                title="",
-                data=new_data,
-            )
+            return self.async_create_entry(title="", data=options)
 
         # Build dynamic filter schema based on available options
+        current_options = self.config_entry.options
         filter_schema_dict = {}
         
         # Add route filter if routes are available
         if self._available_routes:
-            filter_schema_dict[vol.Optional(CONF_LINE_FILTERS)] = cv.multi_select(self._available_routes)
+            filter_schema_dict[vol.Optional(CONF_LINE_FILTERS, default=current_options.get(CONF_LINE_FILTERS, []))] = cv.multi_select(self._available_routes)
         
         # Add destination filter if destinations are available  
         if self._available_destinations:
-            filter_schema_dict[vol.Optional(CONF_DESTINATION_FILTERS)] = cv.multi_select(self._available_destinations)
+            filter_schema_dict[vol.Optional(CONF_DESTINATION_FILTERS, default=current_options.get(CONF_DESTINATION_FILTERS, []))] = cv.multi_select(self._available_destinations)
         
         # Always add filter mode option if we have any filters
         if self._available_routes or self._available_destinations:
-            filter_schema_dict[vol.Optional(CONF_FILTER_MODE, default=FILTER_MODE_INCLUDE)] = vol.In([FILTER_MODE_INCLUDE, FILTER_MODE_EXCLUDE])
+            filter_schema_dict[vol.Optional(CONF_FILTER_MODE, default=current_options.get(CONF_FILTER_MODE, FILTER_MODE_INCLUDE))] = vol.In([FILTER_MODE_INCLUDE, FILTER_MODE_EXCLUDE])
         
         # If no filters are available, create a minimal schema to allow proceeding
         if not filter_schema_dict:

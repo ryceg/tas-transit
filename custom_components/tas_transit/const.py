@@ -9,12 +9,13 @@ API_STOPS_SEARCH: Final = f"{API_BASE_URL}/stops/searchbylocation"
 API_STOPDISPLAYS: Final = f"{API_BASE_URL}/stopdisplays"
 API_STOPSCHEDULE: Final = f"{API_BASE_URL}/currentstopschedule"
 API_SHAPES: Final = f"{API_BASE_URL}/shapes"
+API_TRIPS: Final = f"{API_BASE_URL}/trips"
 API_TIMEOUT: Final = 30
 
 # Update Intervals
 UPDATE_INTERVAL_DEFAULT: Final = 60   # 1 minute - default update interval
 UPDATE_INTERVAL_FREQUENT: Final = 20  # 20 seconds - when bus within 30 minutes
-UPDATE_INTERVAL_THRESHOLD: Final = 30 # 30 minutes - switch to frequent updates
+UPDATE_INTERVAL_THRESHOLD: Final = 10 # 10 minutes - switch to frequent updates
 
 # Configuration Keys
 CONF_STOPS: Final = "stops"

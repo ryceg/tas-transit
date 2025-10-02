@@ -8,13 +8,16 @@ from typing import Any
 
 import aiohttp
 
-try:
-    from .const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_STOPSCHEDULE, API_SHAPES, API_TIMEOUT
-    from .exceptions import TasTransitApiException
-except ImportError:
-    # For standalone testing
-    from const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_STOPSCHEDULE, API_SHAPES, API_TIMEOUT
-    from exceptions import TasTransitApiException
+from .const import (
+    API_BASE_URL,
+    API_STOPS_SEARCH,
+    API_STOPDISPLAYS,
+    API_STOPSCHEDULE,
+    API_SHAPES,
+    API_TRIPS,
+    API_TIMEOUT,
+)
+from .exceptions import TasTransitApiException
 
 _LOGGER = logging.getLogger(__name__)
 

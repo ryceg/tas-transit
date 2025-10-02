@@ -341,10 +341,14 @@ class TasTransitTimeToNextBusSensor(TasTransitSensorBase):
         """Initialize the time to next bus sensor."""
         super().__init__(coordinator, config_entry, stop_id, stop_name, "time_to_next_bus")
         self._attr_name = f"{stop_name} Time to Next Bus"
-        self._attr_native_unit_of_measurement = "min"
         self._attr_device_class = SensorDeviceClass.DURATION
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_icon = "mdi:clock-outline"
+
+    @property
+    def native_unit_of_measurement(self) -> str:
+        """Return the unit of measurement."""
+        return "min"
 
     @property
     def native_value(self) -> int | None:

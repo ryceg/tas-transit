@@ -7,6 +7,7 @@ from typing import Any
 from homeassistant.components.device_tracker import SourceType, TrackerEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -249,11 +250,18 @@ class TasTransitVehicleTracker(CoordinatorEntity, TrackerEntity):
 
         _LOGGER.info("Removed vehicle tracker for %s", self._vehicle_id)
 
-    def mark_for_removal(self) -> None:
+    async def mark_for_removal(self) -> None:
         """Mark this entity for removal from Home Assistant."""
-        self.async_schedule_update_ha_state()
-        # Schedule entity removal
-        self.hass.async_create_task(self.async_remove())
+        _LOGGER.info("Marking vehicle tracker %s for removal", self._vehicle_id)
+
+        # Get the entity registry and remove this entity
+        registry = er.async_get(self.hass)
+        if self.entity_id and registry.async_get(self.entity_id):
+            _LOGGER.debug("Removing entity %s from registry", self.entity_id)
+            registry.async_remove(self.entity_id)
+        else:
+            # Fallback to async_remove if not in registry yet
+            await self.async_remove()
 
 
 class TasTransitStopTracker(CoordinatorEntity, TrackerEntity):

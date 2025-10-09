@@ -463,7 +463,7 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                 for vehicle_id in removed_vehicles:
                     entity = self._device_tracker_entities.get(vehicle_id)
                     if entity:
-                        entity.mark_for_removal()
+                        await entity.mark_for_removal()
                         self._device_tracker_entities.pop(vehicle_id, None)
 
             self._tracked_vehicle_entities -= removed_vehicles

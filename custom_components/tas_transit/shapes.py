@@ -21,14 +21,28 @@ class ShapeManager:
         self._stop_connections: dict[str, list[dict[str, Any]]] = {}
 
     async def initialize(self) -> bool:
-        """Initialize shape data from the API.
+        """Initialize shape data from the API using active trips.
 
         Returns:
             True if initialization successful, False otherwise
         """
         try:
             _LOGGER.info("Initializing route shapes data")
-            shapes_data = await self.api.get_shapes()
+
+            # Get active trips to find valid trip IDs with shape data
+            active_trips = await self.api.get_active_trips()
+            if not active_trips:
+                _LOGGER.warning("No active trips found - shapes data not available")
+                return False
+
+            # Try to get shapes data using the first active trip
+            trip_id = active_trips[0].get("tripId")
+            if not trip_id:
+                _LOGGER.warning("No trip ID found in active trips data")
+                return False
+
+            _LOGGER.debug("Using trip ID %s for shapes data", trip_id)
+            shapes_data = await self.api.get_shapes(trip_id)
 
             if not shapes_data or "links" not in shapes_data:
                 _LOGGER.warning("No shapes data received from API")

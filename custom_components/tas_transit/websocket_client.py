@@ -41,7 +41,7 @@ class TasTransitWebSocketClient:
 
     def __init__(self, vehicle_callback: Callable[[dict[str, Any]], None]) -> None:
         """Initialize WebSocket client.
-        
+
         Args:
             vehicle_callback: Function to call when vehicle data is received
         """
@@ -114,7 +114,7 @@ class TasTransitWebSocketClient:
         """Disconnect from WebSocket server."""
         _LOGGER.info("Disconnecting WebSocket client")
         self._running = False
-        
+
         # Cancel tasks
         if self._listen_task and not self._listen_task.done():
             self._listen_task.cancel()
@@ -135,15 +135,15 @@ class TasTransitWebSocketClient:
 
     async def subscribe_to_stop(self, stop_id: str) -> bool:
         """Subscribe to real-time updates for a specific stop.
-        
+
         Args:
             stop_id: Bus stop ID to subscribe to
-            
+
         Returns:
             True if subscription was successful
         """
         self._subscribed_stops.add(stop_id)
-        
+
         if not self.is_connected:
             _LOGGER.info("WebSocket not connected, subscription to %s will be sent when connected", stop_id)
             return True
@@ -152,7 +152,7 @@ class TasTransitWebSocketClient:
 
     async def unsubscribe_from_stop(self, stop_id: str) -> None:
         """Unsubscribe from updates for a specific stop.
-        
+
         Args:
             stop_id: Bus stop ID to unsubscribe from
         """
@@ -164,7 +164,7 @@ class TasTransitWebSocketClient:
         """Start the WebSocket client with auto-reconnection."""
         _LOGGER.info("Starting WebSocket client")
         self._running = True
-        
+
         # Initial connection
         if not await self.connect():
             # Schedule reconnection
@@ -188,7 +188,7 @@ class TasTransitWebSocketClient:
     async def _listen_for_messages(self) -> None:
         """Listen for incoming WebSocket messages."""
         _LOGGER.debug("Started listening for WebSocket messages")
-        
+
         try:
             async for msg in self._websocket:
                 if msg.type == WSMsgType.TEXT:
@@ -199,7 +199,7 @@ class TasTransitWebSocketClient:
                 elif msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSING):
                     _LOGGER.info("WebSocket connection closed")
                     break
-                    
+
         except asyncio.CancelledError:
             _LOGGER.debug("WebSocket message listener cancelled")
             raise
@@ -207,7 +207,7 @@ class TasTransitWebSocketClient:
             _LOGGER.error("Error in WebSocket message listener: %s", err)
         finally:
             _LOGGER.debug("WebSocket message listener stopped")
-            
+
         # Connection lost, schedule reconnection
         if self._running and self._state == WebSocketState.CONNECTED:
             self._state = WebSocketState.RECONNECTING
@@ -225,18 +225,18 @@ class TasTransitWebSocketClient:
 
             # Split the message into individual vehicle messages
             message_parts = raw_message.split("V_")[1:]  # Skip the empty first element
-            
+
             for json_part in message_parts:
                 if not json_part.strip():
                     continue
-                    
+
                 # Clean up the JSON part - sometimes there are pipe characters
                 json_part = json_part.split("|")[0]  # Take only the first JSON object
                 json_part = json_part.strip()
-                
+
                 if not json_part:
                     continue
-                
+
                 try:
                     vehicle_data = json.loads(json_part)
                 except json.JSONDecodeError as err:
@@ -253,7 +253,7 @@ class TasTransitWebSocketClient:
                     _LOGGER.debug("Unknown message type: %s", message_type)
                     continue
 
-                _LOGGER.debug("Received %s message for vehicle %s", 
+                _LOGGER.debug("Received %s message for vehicle %s",
                              message_type, vehicle_data.get("vehicleId"))
 
                 # Call the callback with processed vehicle data
@@ -273,20 +273,20 @@ class TasTransitWebSocketClient:
             # Calculate delay with exponential backoff
             delay = min(RECONNECT_DELAY_BASE * (2 ** self._reconnect_attempts), MAX_RECONNECT_DELAY)
             self._reconnect_attempts += 1
-            
-            _LOGGER.info("Attempting reconnection #%d in %d seconds", 
+
+            _LOGGER.info("Attempting reconnection #%d in %d seconds",
                         self._reconnect_attempts, delay)
-            
+
             try:
                 await asyncio.sleep(delay)
-                
+
                 if not self._running:
                     break
-                    
+
                 if await self.connect():
                     _LOGGER.info("WebSocket reconnected successfully")
                     break
-                    
+
             except asyncio.CancelledError:
                 break
             except Exception as err:

@@ -133,10 +133,10 @@ class TasTransitVehicleRealtimeStatusSensor(TasTransitVehicleSensorBase):
         vehicle = self.vehicle
         if not vehicle:
             return "disconnected"
-        
+
         if not vehicle.is_active:
             return "inactive"
-        
+
         # Check if location data is recent (within last 5 minutes)
         now = datetime.now()
         if (now - vehicle.last_updated).total_seconds() < 300:

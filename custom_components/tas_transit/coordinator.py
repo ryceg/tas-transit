@@ -84,7 +84,9 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
             enriched_departures = departures
 
             # Process the departures data for this stop with filters
-            processed_data = self._process_departures(enriched_departures, self.config_entry.options)
+            # Use options if available, otherwise fall back to data (initial setup)
+            filter_config = self.config_entry.options if self.config_entry.options else self.config_entry.data
+            processed_data = self._process_departures(enriched_departures, filter_config)
 
             # Add vehicle tracking data to processed data
             processed_data["vehicles"] = self._get_vehicles_for_stop(stop_id, processed_data.get("departures", []))
@@ -423,6 +425,9 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
 
     async def _update_vehicle_entities(self) -> None:
         """Update vehicle tracker entities and sensors based on active vehicles."""
+        from homeassistant.helpers import entity_registry as er
+        from homeassistant.helpers import device_registry as dr
+
         active_vehicles = self.vehicle_manager.get_active_vehicles()
 
         # Handle device tracker entities
@@ -451,28 +456,86 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                 _LOGGER.debug("Adding %d new vehicle sensor entities", len(new_sensor_vehicles))
                 self._vehicle_sensor_callback(new_sensor_vehicles)
 
-        # Clean up entities for vehicles that are no longer active
-        active_vehicle_ids = {v.vehicle_id for v in self.vehicle_manager.get_active_vehicles()}
+        # Clean up tracking sets for vehicles that are removed from the manager
+        # Get all vehicles (including inactive ones) to determine which have been truly removed
+        all_vehicle_ids = set(self.vehicle_manager.get_all_vehicles().keys())
 
-        # Clean up tracker entities for inactive vehicles
-        removed_vehicles = self._tracked_vehicle_entities - active_vehicle_ids
+        # Clean up tracker entities for removed vehicles
+        removed_vehicles = self._tracked_vehicle_entities - all_vehicle_ids
         if removed_vehicles:
-            _LOGGER.debug("Cleaning up %d inactive vehicle tracker entities", len(removed_vehicles))
-            # Remove entities from Home Assistant
-            if hasattr(self, '_device_tracker_entities'):
-                for vehicle_id in removed_vehicles:
-                    entity = self._device_tracker_entities.get(vehicle_id)
-                    if entity:
-                        await entity.mark_for_removal()
-                        self._device_tracker_entities.pop(vehicle_id, None)
+            _LOGGER.info("Removing vehicle entities for %d vehicles: %s", len(removed_vehicles), removed_vehicles)
+
+            # Get entity registry and device registry
+            entity_registry = er.async_get(self.hass)
+            device_registry = dr.async_get(self.hass)
+
+            # Remove device tracker entities from registry
+            # Need to search by pattern since unique_id includes route/trip info
+            for vehicle_id in removed_vehicles:
+                # Find entities for this vehicle by searching all entities
+                entities_to_remove = []
+                for entity_entry in entity_registry.entities.values():
+                    if (entity_entry.platform == "tas_transit" and
+                        entity_entry.domain == "device_tracker" and
+                        f"_vehicle_{vehicle_id}" in entity_entry.unique_id):
+                        entities_to_remove.append(entity_entry.entity_id)
+
+                # Remove found entities
+                for entity_id in entities_to_remove:
+                    _LOGGER.debug("Removing device_tracker entity %s for vehicle %s", entity_id, vehicle_id)
+                    entity_registry.async_remove(entity_id)
 
             self._tracked_vehicle_entities -= removed_vehicles
 
-        # Clean up sensor entities for inactive vehicles
-        removed_sensor_vehicles = self._tracked_vehicle_sensors - active_vehicle_ids
+        # Clean up sensor tracking for removed vehicles
+        removed_sensor_vehicles = self._tracked_vehicle_sensors - all_vehicle_ids
         if removed_sensor_vehicles:
-            _LOGGER.debug("Cleaning up %d inactive vehicle sensor entities", len(removed_sensor_vehicles))
+            _LOGGER.info("Removing vehicle sensor entities for %d vehicles: %s", len(removed_sensor_vehicles), removed_sensor_vehicles)
+
+            # Get entity registry
+            entity_registry = er.async_get(self.hass)
+
+            # Remove sensor entities from registry
+            for vehicle_id in removed_sensor_vehicles:
+                # Find entities for this vehicle by searching all entities
+                entities_to_remove = []
+                for entity_entry in entity_registry.entities.values():
+                    if (entity_entry.platform == "tas_transit" and
+                        entity_entry.domain == "sensor" and
+                        f"_vehicle_{vehicle_id}_" in entity_entry.unique_id):
+                        entities_to_remove.append(entity_entry.entity_id)
+
+                # Remove found entities
+                for entity_id in entities_to_remove:
+                    _LOGGER.debug("Removing sensor entity %s for vehicle %s", entity_id, vehicle_id)
+                    entity_registry.async_remove(entity_id)
+
             self._tracked_vehicle_sensors -= removed_sensor_vehicles
+
+        # Clean up empty vehicle devices after entities have been removed
+        # Combine all vehicles that were removed in this update cycle
+        all_removed_vehicle_ids = removed_vehicles | removed_sensor_vehicles
+        if all_removed_vehicle_ids:
+            device_registry = dr.async_get(self.hass)
+            entity_registry = er.async_get(self.hass)
+
+            for vehicle_id in all_removed_vehicle_ids:
+                # Find the device for this vehicle
+                device_identifier = (DOMAIN, f"vehicle_{vehicle_id}")
+                device_entry = device_registry.async_get_device(identifiers={device_identifier})
+
+                if device_entry:
+                    # Check if device has any remaining entities
+                    remaining_entities = er.async_entries_for_device(
+                        entity_registry, device_entry.id, include_disabled_entities=True
+                    )
+
+                    if not remaining_entities:
+                        _LOGGER.info("Removing empty device for vehicle %s", vehicle_id)
+                        device_registry.async_remove_device(device_entry.id)
+                    else:
+                        _LOGGER.debug("Device for vehicle %s still has %d entities, not removing",
+                                    vehicle_id, len(remaining_entities))
 
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator."""

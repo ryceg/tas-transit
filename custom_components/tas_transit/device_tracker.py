@@ -33,14 +33,14 @@ async def async_setup_entry(
     from .const import CONF_STOP_ID, CONF_STOP_NAME
     stop_id = config_entry.data[CONF_STOP_ID]
     stop_name = config_entry.data[CONF_STOP_NAME]
-    
+
     stop_tracker = TasTransitStopTracker(
         coordinator=coordinator,
         config_entry=config_entry,
         stop_id=stop_id,
         stop_name=stop_name,
     )
-    
+
     async_add_entities([stop_tracker])
     _LOGGER.debug("Added bus stop tracker for %s", stop_id)
 
@@ -250,18 +250,18 @@ class TasTransitVehicleTracker(CoordinatorEntity, TrackerEntity):
 
         _LOGGER.info("Removed vehicle tracker for %s", self._vehicle_id)
 
-    async def mark_for_removal(self) -> None:
-        """Mark this entity for removal from Home Assistant."""
-        _LOGGER.info("Marking vehicle tracker %s for removal", self._vehicle_id)
+    async def async_remove(self, *, force_remove: bool = False) -> None:
+        """Remove entity from Home Assistant.
 
-        # Get the entity registry and remove this entity
-        registry = er.async_get(self.hass)
-        if self.entity_id and registry.async_get(self.entity_id):
-            _LOGGER.debug("Removing entity %s from registry", self.entity_id)
-            registry.async_remove(self.entity_id)
-        else:
-            # Fallback to async_remove if not in registry yet
-            await self.async_remove()
+        This is called by Home Assistant when the entity should be removed.
+        """
+        _LOGGER.info("Removing vehicle tracker entity for %s", self._vehicle_id)
+
+        # Clean up entity reference in coordinator
+        if hasattr(self.coordinator, '_device_tracker_entities'):
+            self.coordinator._device_tracker_entities.pop(self._vehicle_id, None)
+
+        await super().async_remove(force_remove=force_remove)
 
 
 class TasTransitStopTracker(CoordinatorEntity, TrackerEntity):
@@ -335,7 +335,7 @@ class TasTransitStopTracker(CoordinatorEntity, TrackerEntity):
         """Return if the stop tracker is available."""
         stop_data = self._get_stop_data()
         return (
-            stop_data is not None 
+            stop_data is not None
             and stop_data.get("stop_location") is not None
             and stop_data["stop_location"].get("latitude") is not None
             and stop_data["stop_location"].get("longitude") is not None
@@ -349,7 +349,7 @@ class TasTransitStopTracker(CoordinatorEntity, TrackerEntity):
             return {"stop_id": self._stop_id}
 
         attrs = {"stop_id": self._stop_id}
-        
+
         # Add stop information if available
         if stop_data.get("stop_location"):
             location_data = stop_data["stop_location"]
@@ -375,7 +375,7 @@ class TasTransitStopTracker(CoordinatorEntity, TrackerEntity):
         else:
             attrs.update({
                 "next_route": "No service",
-                "next_destination": "No service", 
+                "next_destination": "No service",
                 "scheduled_minutes_until": None,
                 "estimated_minutes_until": None,
             })

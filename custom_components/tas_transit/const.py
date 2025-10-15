@@ -21,9 +21,9 @@ UPDATE_INTERVAL_THRESHOLD: Final = 10 # 10 minutes - switch to frequent updates
 CONF_STOPS: Final = "stops"
 CONF_STOP_ID: Final = "stop_id"
 CONF_STOP_NAME: Final = "stop_name"
-CONF_LINE_FILTERS: Final = "line_filters"
-CONF_DESTINATION_FILTERS: Final = "destination_filters"
-CONF_FILTER_MODE: Final = "filter_mode"
+CONF_LINE_FILTERS: Final = "line_filters"  # Used for initial setup pre-population
+CONF_DESTINATION_FILTERS: Final = "destination_filters"  # Used for initial setup pre-population
+CONF_FILTER_MODE: Final = "filter_mode"  # Deprecated - now using select entity
 
 # Sensor Names
 SENSOR_NEXT_BUS: Final = "next_bus_departure"

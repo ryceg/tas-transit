@@ -39,7 +39,6 @@ class TasTransitVehicleSensorBase(CoordinatorEntity, SensorEntity):
             "name": f"Bus {vehicle_id}",
             "manufacturer": "Tasmanian Government",
             "model": "Transit Vehicle",
-            "via_device": (DOMAIN, f"{config_entry.entry_id}_coordinator"),
         }
 
     @property

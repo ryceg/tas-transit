@@ -513,30 +513,46 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
 
             self._tracked_vehicle_sensors -= removed_sensor_vehicles
 
-        # Clean up empty vehicle devices after entities have been removed
-        # Combine all vehicles that were removed in this update cycle
+        # Schedule device cleanup for next tick to ensure entity registry is updated
         all_removed_vehicle_ids = removed_vehicles | removed_sensor_vehicles
         if all_removed_vehicle_ids:
-            device_registry = dr.async_get(self.hass)
-            entity_registry = er.async_get(self.hass)
+            # Schedule cleanup on next event loop to give entity registry time to update
+            self.hass.async_create_task(
+                self._cleanup_vehicle_devices(all_removed_vehicle_ids)
+            )
 
-            for vehicle_id in all_removed_vehicle_ids:
-                # Find the device for this vehicle
-                device_identifier = (DOMAIN, f"vehicle_{vehicle_id}")
-                device_entry = device_registry.async_get_device(identifiers={device_identifier})
+    async def _cleanup_vehicle_devices(self, vehicle_ids: set[str]) -> None:
+        """Clean up empty vehicle devices after entity removal.
 
-                if device_entry:
-                    # Check if device has any remaining entities
-                    remaining_entities = er.async_entries_for_device(
-                        entity_registry, device_entry.id, include_disabled_entities=True
-                    )
+        This is called asynchronously to ensure entity registry has time to update.
+        """
+        from homeassistant.helpers import entity_registry as er
+        from homeassistant.helpers import device_registry as dr
 
-                    if not remaining_entities:
-                        _LOGGER.info("Removing empty device for vehicle %s", vehicle_id)
-                        device_registry.async_remove_device(device_entry.id)
-                    else:
-                        _LOGGER.debug("Device for vehicle %s still has %d entities, not removing",
-                                    vehicle_id, len(remaining_entities))
+        # Small delay to ensure entity registry is updated
+        await asyncio.sleep(0.1)
+
+        device_registry = dr.async_get(self.hass)
+        entity_registry = er.async_get(self.hass)
+
+        for vehicle_id in vehicle_ids:
+            # Find the device for this vehicle
+            device_identifier = (DOMAIN, f"vehicle_{vehicle_id}")
+            device_entry = device_registry.async_get_device(identifiers={device_identifier})
+
+            if device_entry:
+                # Check if device has any remaining entities
+                remaining_entities = er.async_entries_for_device(
+                    entity_registry, device_entry.id, include_disabled_entities=True
+                )
+
+                if not remaining_entities:
+                    _LOGGER.info("Removing empty device for vehicle %s (device_id: %s)", vehicle_id, device_entry.id)
+                    device_registry.async_remove_device(device_entry.id)
+                else:
+                    _LOGGER.debug("Device for vehicle %s still has %d entities, not removing: %s",
+                                vehicle_id, len(remaining_entities),
+                                [e.entity_id for e in remaining_entities])
 
     async def async_shutdown(self) -> None:
         """Shutdown the coordinator."""
@@ -552,7 +568,7 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
         await self.api.close()
 
     def _mark_missing_vehicles_as_completed(self, stops_data: dict[str, Any]) -> None:
-        """Mark vehicles as completed if they no longer appear in API data."""
+        """Mark vehicles as departed/completed if they no longer appear in API data."""
         # Collect all active trip IDs from current API responses
         active_trip_ids: set[str] = set()
 
@@ -563,5 +579,11 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
                 if trip_id:
                     active_trip_ids.add(trip_id)
 
-        # Mark vehicles not in API as completed
+        # First, mark vehicles as departed (sets departure time and calculates destination arrival)
+        # This happens when a bus leaves the monitored stop
+        departed_count = self.vehicle_manager.mark_vehicles_departed_from_stop(active_trip_ids)
+        if departed_count > 0:
+            _LOGGER.debug("Marked %d vehicles as departed from monitored stop", departed_count)
+
+        # Then mark vehicles as completed (fallback for vehicles without trip duration)
         self.vehicle_manager.mark_vehicles_not_in_api_as_completed(active_trip_ids)

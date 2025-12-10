@@ -46,6 +46,7 @@ VEHICLE_CLEANUP_INTERVAL: Final = 300  # 5 minutes in seconds
 VEHICLE_TRIP_COMPLETED_GRACE_PERIOD: Final = 300    # 5 minutes after trip completion detected
 VEHICLE_STALLED_AT_INDEX_TIMEOUT: Final = 900       # 15 minutes if stalled at same index
 VEHICLE_FALLBACK_TIMEOUT: Final = 3600              # 60 minutes absolute fallback timeout
+VEHICLE_POST_DESTINATION_GRACE_PERIOD: Final = 300  # 5 minutes after reaching destination
 
 # Filter Configuration
 FILTER_MODE_INCLUDE: Final = "include"

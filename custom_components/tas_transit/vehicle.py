@@ -8,6 +8,40 @@ from typing import Any
 
 _LOGGER = logging.getLogger(__name__)
 
+
+def parse_trip_duration_from_template_id(trip_template_id: str | None) -> int | None:
+    """Parse trip duration in seconds from tripTemplateId.
+
+    tripTemplateId format: "Route Name_direction_Start Stop_End Stop_HH:MM:SS_variant"
+    Example: "University to Shoreline_0_Shoreline Plaza inwards stop_UTAS, Churchill Av_00:34:00_1"
+
+    Args:
+        trip_template_id: The tripTemplateId string from WebSocket data
+
+    Returns:
+        Trip duration in seconds, or None if parsing fails
+    """
+    if not trip_template_id:
+        return None
+
+    try:
+        # Split by underscore and look for time pattern (HH:MM:SS)
+        parts = trip_template_id.split("_")
+        for part in parts:
+            # Check if this part looks like a time duration (HH:MM:SS)
+            if len(part) == 8 and part[2] == ":" and part[5] == ":":
+                try:
+                    hours, minutes, seconds = map(int, part.split(":"))
+                    total_seconds = hours * 3600 + minutes * 60 + seconds
+                    if total_seconds > 0:
+                        return total_seconds
+                except ValueError:
+                    continue
+        return None
+    except Exception as err:
+        _LOGGER.debug("Error parsing trip duration from '%s': %s", trip_template_id, err)
+        return None
+
 # Vehicle cleanup settings - using const values
 from .const import (
     VEHICLE_INACTIVE_TIMEOUT as INACTIVE_TIMEOUT_SECONDS,
@@ -15,6 +49,7 @@ from .const import (
     VEHICLE_TRIP_COMPLETED_GRACE_PERIOD,
     VEHICLE_STALLED_AT_INDEX_TIMEOUT,
     VEHICLE_FALLBACK_TIMEOUT,
+    VEHICLE_POST_DESTINATION_GRACE_PERIOD,
 )
 
 VEHICLE_INACTIVE_TIMEOUT = timedelta(seconds=INACTIVE_TIMEOUT_SECONDS)
@@ -87,6 +122,11 @@ class Vehicle:
     next_stop_name: str | None = None
     stops_remaining: str | int | None = None
 
+    # Destination arrival tracking
+    trip_duration_seconds: int | None = None  # Duration from tripTemplateId
+    departure_from_stop_time: datetime | None = None  # When bus left the monitored stop
+    estimated_destination_arrival: datetime | None = None  # Calculated arrival at final destination
+
     def update_from_websocket(self, data: dict[str, Any]) -> bool:
         """Update vehicle data from WebSocket message.
 
@@ -119,6 +159,14 @@ class Vehicle:
                 self.trip_template_id = data.get("tripTemplateId")
                 self.last_updated = datetime.now()
                 self.is_active = True
+
+                # Parse and store trip duration from tripTemplateId (only once)
+                if self.trip_duration_seconds is None and self.trip_template_id:
+                    self.trip_duration_seconds = parse_trip_duration_from_template_id(self.trip_template_id)
+                    if self.trip_duration_seconds:
+                        _LOGGER.debug("Vehicle %s trip duration: %d seconds (%d min)",
+                                    self.vehicle_id, self.trip_duration_seconds,
+                                    self.trip_duration_seconds // 60)
 
                 # Update location
                 location_data = data.get("vehicleLocation")
@@ -166,6 +214,12 @@ class Vehicle:
             "current_stop_name": self.current_stop_name,
             "next_stop_name": self.next_stop_name,
             "stops_remaining": self.stops_remaining,
+
+            # Destination arrival tracking
+            "trip_duration_minutes": self.trip_duration_seconds // 60 if self.trip_duration_seconds else None,
+            "departure_from_stop_time": self.departure_from_stop_time.isoformat() if self.departure_from_stop_time else None,
+            "estimated_destination_arrival": self.estimated_destination_arrival.isoformat() if self.estimated_destination_arrival else None,
+            "has_reached_destination": self.has_reached_destination(),
         }
 
         if self.location:
@@ -197,19 +251,33 @@ class Vehicle:
         """Determine if vehicle should be removed based on various criteria."""
         now = datetime.now()
 
-        # 1. If trip is explicitly completed, remove after grace period
+        # 1. If we have estimated destination arrival, use that + grace period
+        #    This is the primary method - track until 5 min after reaching destination
+        if self.estimated_destination_arrival:
+            time_since_destination = self.time_since_destination_arrival()
+            if time_since_destination and time_since_destination.total_seconds() > VEHICLE_POST_DESTINATION_GRACE_PERIOD:
+                _LOGGER.debug(
+                    "Vehicle %s ready for removal (reached destination + %.1f min grace period)",
+                    self.vehicle_id, VEHICLE_POST_DESTINATION_GRACE_PERIOD / 60
+                )
+                return True
+            # If we have destination estimate but haven't reached it yet, keep tracking
+            if not time_since_destination:
+                return False
+
+        # 2. If trip is explicitly completed (REMOVED signal), remove after grace period
         if self.trip_completed_at:
             grace_period_elapsed = (now - self.trip_completed_at).total_seconds() > VEHICLE_TRIP_COMPLETED_GRACE_PERIOD
             if grace_period_elapsed:
                 _LOGGER.debug("Vehicle %s ready for removal (trip completed + grace period)", self.vehicle_id)
                 return True
 
-        # 2. If vehicle is stalled at the same index (likely at end of route)
+        # 3. If vehicle is stalled at the same index (likely at end of route)
         if self.is_stalled_at_index():
             _LOGGER.debug("Vehicle %s ready for removal (stalled at index %s)", self.vehicle_id, self.last_seen_index)
             return True
 
-        # 3. Fallback timeout for any vehicle
+        # 4. Fallback timeout for any vehicle
         time_since_update = (now - self.last_updated).total_seconds()
         if time_since_update > VEHICLE_FALLBACK_TIMEOUT:
             _LOGGER.debug("Vehicle %s ready for removal (fallback timeout)", self.vehicle_id)
@@ -232,6 +300,52 @@ class Vehicle:
         if next_stop:
             _LOGGER.debug("Vehicle %s next stop: %s (%s remaining)",
                          self.vehicle_id, next_stop, stops_remaining or "unknown")
+
+    def set_departure_from_stop(self, departure_time: datetime) -> None:
+        """Set when the vehicle departed from the monitored stop and calculate destination arrival.
+
+        Args:
+            departure_time: The time the vehicle departed from the monitored stop
+        """
+        self.departure_from_stop_time = departure_time
+
+        # Calculate estimated destination arrival if we have trip duration
+        if self.trip_duration_seconds:
+            self.estimated_destination_arrival = departure_time + timedelta(seconds=self.trip_duration_seconds)
+            _LOGGER.info(
+                "Vehicle %s departed at %s, estimated destination arrival at %s (trip duration: %d min)",
+                self.vehicle_id,
+                departure_time.strftime("%H:%M:%S"),
+                self.estimated_destination_arrival.strftime("%H:%M:%S"),
+                self.trip_duration_seconds // 60
+            )
+        else:
+            _LOGGER.debug(
+                "Vehicle %s departed at %s but no trip duration available",
+                self.vehicle_id, departure_time.strftime("%H:%M:%S")
+            )
+
+    def has_reached_destination(self) -> bool:
+        """Check if the vehicle has reached its destination based on estimated arrival time.
+
+        Returns:
+            True if estimated destination arrival time has passed, False otherwise
+        """
+        if self.estimated_destination_arrival is None:
+            return False
+        return datetime.now() >= self.estimated_destination_arrival
+
+    def time_since_destination_arrival(self) -> timedelta | None:
+        """Get time elapsed since the vehicle reached its destination.
+
+        Returns:
+            Time since destination arrival, or None if not yet arrived or no estimate available
+        """
+        if self.estimated_destination_arrival is None:
+            return None
+        if datetime.now() < self.estimated_destination_arrival:
+            return None
+        return datetime.now() - self.estimated_destination_arrival
 
     @classmethod
     def from_websocket_data(cls, data: dict[str, Any]) -> Vehicle | None:
@@ -272,16 +386,21 @@ class Vehicle:
                 current_index = data.get("index")
                 now = datetime.now()
 
+                # Parse trip duration from tripTemplateId
+                trip_template_id = data.get("tripTemplateId")
+                trip_duration = parse_trip_duration_from_template_id(trip_template_id)
+
                 return cls(
                     vehicle_id=vehicle_id,
                     trip_id=data.get("tripId"),
                     line_number=data.get("lineNumber"),
-                    trip_template_id=data.get("tripTemplateId"),
+                    trip_template_id=trip_template_id,
                     location=location,
                     last_updated=now,
                     is_active=True,
                     last_seen_index=current_index,
                     first_seen_at_index=now if current_index is not None else None,
+                    trip_duration_seconds=trip_duration,
                 )
 
             else:
@@ -402,8 +521,42 @@ class VehicleManager:
         """Return number of active vehicles."""
         return len([v for v in self._vehicles.values() if v.is_active])
 
+    def mark_vehicles_departed_from_stop(self, active_trip_ids: set[str]) -> int:
+        """Mark vehicles as having departed from the monitored stop.
+
+        When a vehicle's trip disappears from the API departures list for the monitored stop,
+        it means the bus has departed. We set the departure time so we can calculate
+        when it will reach its destination.
+
+        Args:
+            active_trip_ids: Set of trip IDs currently present in API responses
+
+        Returns:
+            Number of vehicles marked as departed
+        """
+        marked_count = 0
+        now = datetime.now()
+
+        for vehicle in self._vehicles.values():
+            # Skip if already has departure time set or no trip_id
+            if vehicle.departure_from_stop_time is not None or not vehicle.trip_id:
+                continue
+
+            # If vehicle's trip is no longer in active API data, it has departed
+            if vehicle.trip_id not in active_trip_ids and vehicle.is_active:
+                vehicle.set_departure_from_stop(now)
+                marked_count += 1
+
+        if marked_count > 0:
+            _LOGGER.info("Marked %d vehicles as departed from stop", marked_count)
+
+        return marked_count
+
     def mark_vehicles_not_in_api_as_completed(self, active_trip_ids: set[str]) -> int:
         """Mark vehicles as trip completed if they no longer appear in API data.
+
+        Note: This is now secondary to mark_vehicles_departed_from_stop().
+        Vehicles should primarily be tracked based on estimated destination arrival.
 
         Args:
             active_trip_ids: Set of trip IDs currently present in API responses
@@ -418,9 +571,14 @@ class VehicleManager:
             if vehicle.is_trip_completed() or not vehicle.trip_id:
                 continue
 
+            # Skip if vehicle has destination estimate - let that handle removal
+            if vehicle.estimated_destination_arrival is not None:
+                continue
+
             # If vehicle's trip is no longer in active API data, mark as completed
+            # This is a fallback for vehicles without trip duration info
             if vehicle.trip_id not in active_trip_ids and vehicle.is_active:
-                vehicle.mark_trip_completed("disappeared from API")
+                vehicle.mark_trip_completed("disappeared from API (no destination estimate)")
                 marked_count += 1
 
         if marked_count > 0:

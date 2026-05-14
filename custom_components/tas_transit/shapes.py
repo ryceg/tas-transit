@@ -28,7 +28,7 @@ class ShapeManager:
         """
         try:
             _LOGGER.info("Initializing route shapes data")
-
+            
             # Get active trips to find valid trip IDs with shape data
             active_trips = await self.api.get_active_trips()
             if not active_trips:

@@ -110,6 +110,9 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
             # Mark vehicles as completed if they no longer appear in API data
             self._mark_missing_vehicles_as_completed({stop_id: processed_data})
 
+            # Remove vehicles that don't match configured route filters
+            self._remove_unfiltered_vehicles()
+
             # Clean up expired vehicles
             removed_count = self.vehicle_manager.cleanup_expired_vehicles()
             if removed_count > 0:
@@ -357,8 +360,46 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
 
         return shapes_data
 
+    def _vehicle_matches_filters(self, vehicle_data: dict[str, Any]) -> bool:
+        """Check if a vehicle's route matches the configured line/destination filters.
+
+        If no filters are configured, all vehicles match.
+        """
+        filter_config = self.config_entry.options if self.config_entry.options else self.config_entry.data
+        line_filters = filter_config.get(CONF_LINE_FILTERS, [])
+        destination_filters = filter_config.get(CONF_DESTINATION_FILTERS, [])
+        filter_mode = filter_config.get(CONF_FILTER_MODE, FILTER_MODE_INCLUDE)
+
+        if not line_filters and not destination_filters:
+            return True
+
+        line_number = (vehicle_data.get("lineNumber") or "").strip()
+
+        if filter_mode == FILTER_MODE_INCLUDE:
+            # In include mode, vehicle must match at least one line filter
+            # (We can't check destination filters here since WebSocket data
+            # doesn't include destination info — but line filtering catches most cases)
+            if line_filters:
+                return self._matches_line_filter(line_number, line_filters)
+            # If only destination filters are set, we can't filter WebSocket vehicles
+            # by destination, so allow them through
+            return True
+        else:
+            # In exclude mode, vehicle must NOT match any line filter
+            if line_filters:
+                return not self._matches_line_filter(line_number, line_filters)
+            return True
+
     def _handle_vehicle_update(self, vehicle_data: dict[str, Any]) -> None:
         """Handle vehicle update from WebSocket."""
+        # Filter out vehicles on routes we don't care about
+        if not self._vehicle_matches_filters(vehicle_data):
+            _LOGGER.debug(
+                "Ignoring vehicle %s on route %s (doesn't match filters)",
+                vehicle_data.get("vehicleId"), vehicle_data.get("lineNumber"),
+            )
+            return
+
         vehicle = self.vehicle_manager.update_vehicle(vehicle_data)
         if vehicle:
             # Trigger coordinator update to notify entities
@@ -587,3 +628,36 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
 
         # Then mark vehicles as completed (fallback for vehicles without trip duration)
         self.vehicle_manager.mark_vehicles_not_in_api_as_completed(active_trip_ids)
+
+    def _remove_unfiltered_vehicles(self) -> None:
+        """Remove tracked vehicles whose route doesn't match configured filters.
+
+        This catches vehicles that were created before filtering was added,
+        or whose lineNumber wasn't available on the first WebSocket message.
+        """
+        filter_config = self.config_entry.options if self.config_entry.options else self.config_entry.data
+        line_filters = filter_config.get(CONF_LINE_FILTERS, [])
+        filter_mode = filter_config.get(CONF_FILTER_MODE, FILTER_MODE_INCLUDE)
+
+        if not line_filters:
+            return
+
+        vehicles_to_remove = []
+        for vehicle_id, vehicle in self.vehicle_manager.get_all_vehicles().items():
+            line_number = (vehicle.line_number or "").strip()
+            if not line_number:
+                # No line number yet — skip, don't remove
+                continue
+
+            matches = self._matches_line_filter(line_number, line_filters)
+            if filter_mode == FILTER_MODE_INCLUDE and not matches:
+                vehicles_to_remove.append(vehicle_id)
+            elif filter_mode == FILTER_MODE_EXCLUDE and matches:
+                vehicles_to_remove.append(vehicle_id)
+
+        for vehicle_id in vehicles_to_remove:
+            _LOGGER.info(
+                "Removing vehicle %s (route %s doesn't match filters)",
+                vehicle_id, self.vehicle_manager.get_vehicle(vehicle_id).line_number if self.vehicle_manager.get_vehicle(vehicle_id) else "?",
+            )
+            self.vehicle_manager.remove_vehicle(vehicle_id)

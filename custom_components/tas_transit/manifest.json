@@ -1,6 +1,6 @@
 {
   "domain": "tas_transit",
-  "name": "Tasmanian Public Transport",
+  "name": "Tasmanian Transport",
   "codeowners": ["@ryceg"],
   "config_flow": true,
   "documentation": "https://github.com/ryceg/tas-transit",

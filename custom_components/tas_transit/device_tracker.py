@@ -33,14 +33,14 @@ async def async_setup_entry(
     from .const import CONF_STOP_ID, CONF_STOP_NAME
     stop_id = config_entry.data[CONF_STOP_ID]
     stop_name = config_entry.data[CONF_STOP_NAME]
-
+    
     stop_tracker = TasTransitStopTracker(
         coordinator=coordinator,
         config_entry=config_entry,
         stop_id=stop_id,
         stop_name=stop_name,
     )
-
+    
     async_add_entities([stop_tracker])
     _LOGGER.debug("Added bus stop tracker for %s", stop_id)
 
@@ -335,7 +335,7 @@ class TasTransitStopTracker(CoordinatorEntity, TrackerEntity):
         """Return if the stop tracker is available."""
         stop_data = self._get_stop_data()
         return (
-            stop_data is not None
+            stop_data is not None 
             and stop_data.get("stop_location") is not None
             and stop_data["stop_location"].get("latitude") is not None
             and stop_data["stop_location"].get("longitude") is not None
@@ -349,7 +349,7 @@ class TasTransitStopTracker(CoordinatorEntity, TrackerEntity):
             return {"stop_id": self._stop_id}
 
         attrs = {"stop_id": self._stop_id}
-
+        
         # Add stop information if available
         if stop_data.get("stop_location"):
             location_data = stop_data["stop_location"]
@@ -375,7 +375,7 @@ class TasTransitStopTracker(CoordinatorEntity, TrackerEntity):
         else:
             attrs.update({
                 "next_route": "No service",
-                "next_destination": "No service",
+                "next_destination": "No service", 
                 "scheduled_minutes_until": None,
                 "estimated_minutes_until": None,
             })

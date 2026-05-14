@@ -47,33 +47,33 @@ def _extract_unique_values(items: list[dict[str, Any]], key: str) -> list[str]:
 
 def _extract_schedule_filter_options(schedule_data: dict[str, Any]) -> tuple[list[str], list[str]]:
     """Extract route numbers and destinations from stopschedule data.
-
+    
     Args:
         schedule_data: Full stopschedule response
-
+        
     Returns:
         Tuple of (route_numbers, destinations)
     """
     routes = set()
     destinations = set()
-
+    
     departure_times = schedule_data.get("departureTimes", {})
-
+    
     # Iterate through all time buckets
     for time_bucket, departures in departure_times.items():
         for departure in departures:
             direction_info = departure.get("directionOfLine", {})
-
+            
             # Extract route number
             line_number = direction_info.get("lineNumber")
             if line_number:
                 routes.add(str(line_number))
-
+            
             # Extract destination
             destination = direction_info.get("destinationName")
             if destination:
                 destinations.add(str(destination))
-
+    
     return sorted(list(routes)), sorted(list(destinations))
 
 
@@ -92,7 +92,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     def _extract_filter_options(self, schedule_data: dict[str, Any]) -> None:
         """Extract available route numbers and destinations from stopschedule data."""
         self._available_routes, self._available_destinations = _extract_schedule_filter_options(schedule_data)
-
+        
         _LOGGER.debug("Extracted %d routes: %s", len(self._available_routes), self._available_routes)
         _LOGGER.debug("Extracted %d destinations: %s", len(self._available_destinations), self._available_destinations)
 
@@ -100,7 +100,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
         """Handle the initial step."""
-
+        
         errors: dict[str, str] = {}
         description_placeholders = {
             "transport_site_url": TRANSPORT_WEB_URL,
@@ -112,7 +112,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Set unique ID and abort if already exists
             await self.async_set_unique_id(user_input[CONF_STOP_ID])
             self._abort_if_unique_id_configured()
-
+            
             try:
                 # Validate the stop ID and get stop information
                 api = TasTransitApi()
@@ -140,7 +140,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     except Exception as e:
                         _LOGGER.warning("Could not fetch schedule data for filter options: %s", e)
                         # Continue anyway with empty options
-
+                    
                     # Store stop info and proceed to filter configuration
                     self._stop_id = user_input[CONF_STOP_ID]
                     self._stop_name = stop_name
@@ -156,7 +156,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
             description_placeholders=description_placeholders,
         )
-
+            
         errors: dict[str, str] = {}
         description_placeholders = {
             "transport_site_url": TRANSPORT_WEB_URL,
@@ -192,7 +192,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     except Exception as e:
                         _LOGGER.warning("Could not fetch schedule data for filter options: %s", e)
                         # Continue anyway with empty options
-
+                    
                     # Store stop info and proceed to filter configuration
                     self._stop_id = user_input[CONF_STOP_ID]
                     self._stop_name = stop_name
@@ -219,7 +219,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             destination_filters = user_input.get(CONF_DESTINATION_FILTERS, [])
             filter_mode = user_input.get(CONF_FILTER_MODE, FILTER_MODE_INCLUDE)
 
-
+            
             # Create the stop configuration
             data = {
                 CONF_STOP_ID: self._stop_id,
@@ -241,23 +241,23 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         # Build dynamic filter schema based on available options
         filter_schema_dict = {}
-
+        
         # Add route filter if routes are available
         if self._available_routes:
             filter_schema_dict[vol.Optional(CONF_LINE_FILTERS)] = cv.multi_select(self._available_routes)
-
-        # Add destination filter if destinations are available
+        
+        # Add destination filter if destinations are available  
         if self._available_destinations:
             filter_schema_dict[vol.Optional(CONF_DESTINATION_FILTERS)] = cv.multi_select(self._available_destinations)
-
+        
         # Always add filter mode option if we have any filters
         if self._available_routes or self._available_destinations:
             filter_schema_dict[vol.Optional(CONF_FILTER_MODE, default=FILTER_MODE_INCLUDE)] = vol.In([FILTER_MODE_INCLUDE, FILTER_MODE_EXCLUDE])
-
+        
         # If no filters are available, create a minimal schema to allow proceeding
         if not filter_schema_dict:
             filter_schema_dict[vol.Optional("no_filters_available", default=True)] = bool
-
+        
         filter_schema = vol.Schema(filter_schema_dict)
 
         # Show filter configuration form
@@ -296,7 +296,7 @@ class OptionsFlow(config_entries.OptionsFlow):
     def _extract_filter_options(self, schedule_data: dict[str, Any]) -> None:
         """Extract available route numbers and destinations from stopschedule data."""
         self._available_routes, self._available_destinations = _extract_schedule_filter_options(schedule_data)
-
+        
         _LOGGER.debug("Extracted %d routes: %s", len(self._available_routes), self._available_routes)
         _LOGGER.debug("Extracted %d destinations: %s", len(self._available_destinations), self._available_destinations)
 
@@ -340,23 +340,23 @@ class OptionsFlow(config_entries.OptionsFlow):
         # Build dynamic filter schema based on available options
         current_options = self.config_entry.options
         filter_schema_dict = {}
-
+        
         # Add route filter if routes are available
         if self._available_routes:
             filter_schema_dict[vol.Optional(CONF_LINE_FILTERS, default=current_options.get(CONF_LINE_FILTERS, []))] = cv.multi_select(self._available_routes)
-
-        # Add destination filter if destinations are available
+        
+        # Add destination filter if destinations are available  
         if self._available_destinations:
             filter_schema_dict[vol.Optional(CONF_DESTINATION_FILTERS, default=current_options.get(CONF_DESTINATION_FILTERS, []))] = cv.multi_select(self._available_destinations)
-
+        
         # Always add filter mode option if we have any filters
         if self._available_routes or self._available_destinations:
             filter_schema_dict[vol.Optional(CONF_FILTER_MODE, default=current_options.get(CONF_FILTER_MODE, FILTER_MODE_INCLUDE))] = vol.In([FILTER_MODE_INCLUDE, FILTER_MODE_EXCLUDE])
-
+        
         # If no filters are available, create a minimal schema to allow proceeding
         if not filter_schema_dict:
             filter_schema_dict[vol.Optional("no_filters_available", default=True)] = bool
-
+        
         filter_schema = vol.Schema(filter_schema_dict)
 
         # Show filter configuration form

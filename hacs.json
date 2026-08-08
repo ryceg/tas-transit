@@ -1,6 +1,8 @@
 {
-	"name": "Tas Transit",
-	"render_readme": true,
-	"iot_class": "cloud_polling",
-	"country": ["AU"]
+  "name": "Tas Transit",
+  "domain": "tas_transit",
+  "content_in_root": false,
+  "render_readme": true,
+  "iot_class": "cloud_polling",
+  "country": ["AU"]
 }

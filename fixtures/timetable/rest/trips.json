@@ -1,0 +1,233 @@
+[
+  {
+    "vehicleId": "MET830",
+    "tripId": "137434-MTS2024-MTS24NWk-Weekday-004_2025-09-24_160_0_19:58:00",
+    "directionOfLine": {
+      "lineNumber": "160",
+      "destinationName": "Launceston City",
+      "direction": 0,
+      "lineIdentifier": { "shortName": "160", "type": "3" }
+    },
+    "lastStopName": "Westbury Rd before Ralph St"
+  },
+  {
+    "vehicleId": "22-ODL-1859",
+    "tripId": "175921-KIN2025-KIN24SWk-Weekday-005_2025-09-24_722_1_18:59:00",
+    "directionOfLine": {
+      "lineNumber": "722",
+      "destinationName": "New Norfolk",
+      "direction": 1,
+      "lineIdentifier": { "shortName": "722", "type": "3" }
+    },
+    "lastStopName": "Back River Rd after Howett Dr"
+  },
+  {
+    "vehicleId": "MET840",
+    "tripId": "180274-MTS2025-MTS25SWk-Weekday-020_2025-09-24_510_0_19:42:00",
+    "directionOfLine": {
+      "lineNumber": "510",
+      "destinationName": "Glenorchy Mall",
+      "direction": 0,
+      "lineIdentifier": { "shortName": "510", "type": "3" }
+    },
+    "lastStopName": "Main Rd before Esmond St"
+  },
+  {
+    "vehicleId": "MET844",
+    "tripId": "180232-MTS2025-MTS25SWk-Weekday-020_2025-09-24_503_1_20:05:00",
+    "directionOfLine": {
+      "lineNumber": "503",
+      "destinationName": "Tolosa Park",
+      "direction": 1,
+      "lineIdentifier": { "shortName": "503", "type": "3" }
+    },
+    "lastStopName": null
+  },
+  {
+    "vehicleId": "MET847",
+    "tripId": "137124-MTS2024-MTS24NWk-Weekday-004_2025-09-24_115_1_20:00:00",
+    "directionOfLine": {
+      "lineNumber": "115",
+      "destinationName": "Rocherlea",
+      "direction": 1,
+      "lineIdentifier": { "shortName": "115", "type": "3" }
+    },
+    "lastStopName": "Finn Barrs School, Invermay Rd"
+  },
+  {
+    "vehicleId": "MET838",
+    "tripId": "180290-MTS2025-MTS25SWk-Weekday-020_2025-09-24_510_1_19:40:00",
+    "directionOfLine": {
+      "lineNumber": "510",
+      "destinationName": "Austins Ferry",
+      "direction": 1,
+      "lineIdentifier": { "shortName": "510", "type": "3" }
+    },
+    "lastStopName": "Main Rd at riverview Pde"
+  },
+  {
+    "vehicleId": "MET814",
+    "tripId": "180543-MTS2025-MTS25SWk-Weekday-020_2025-09-24_542_0_19:59:00",
+    "directionOfLine": {
+      "lineNumber": "542",
+      "destinationName": "Glenorchy Mall",
+      "direction": 0,
+      "lineIdentifier": { "shortName": "542", "type": "3" }
+    },
+    "lastStopName": "14 Corinda Gr"
+  },
+  {
+    "vehicleId": "MET875",
+    "tripId": "180380-MTS2025-MTS25SWk-Weekday-020_2025-09-24_520_1_19:10:00",
+    "directionOfLine": {
+      "lineNumber": "520",
+      "destinationName": "Cove Hill Fair",
+      "direction": 1,
+      "lineIdentifier": { "shortName": "520", "type": "3" }
+    },
+    "lastStopName": "St Pauls Catholic School, Paice St"
+  },
+  {
+    "vehicleId": "MET878",
+    "tripId": "179683-MTS2025-MTS25SWk-Weekday-020_2025-09-24_428_0_19:47:00",
+    "directionOfLine": {
+      "lineNumber": "428",
+      "destinationName": "Hobart City",
+      "direction": 0,
+      "lineIdentifier": { "shortName": "428", "type": "3" }
+    },
+    "lastStopName": null
+  },
+  {
+    "vehicleId": "MET872",
+    "tripId": "180966-MTS2025-MTS25SWk-Weekday-020-1111000_2025-09-24_511_1_20:03:00",
+    "directionOfLine": {
+      "lineNumber": "511",
+      "destinationName": "Claremont",
+      "direction": 1,
+      "lineIdentifier": { "shortName": "511", "type": "3" }
+    },
+    "lastStopName": "Main Rd after Chapel St"
+  },
+  {
+    "vehicleId": "MET889",
+    "tripId": "180459-MTS2025-MTS25SWk-Weekday-020_2025-09-24_530_1_19:45:00",
+    "directionOfLine": {
+      "lineNumber": "530",
+      "destinationName": "Glenorchy Mall",
+      "direction": 1,
+      "lineIdentifier": { "shortName": "530", "type": "3" }
+    },
+    "lastStopName": "Gage Rd before Tottenham Rd"
+  },
+  {
+    "vehicleId": "51-ODL-1934",
+    "tripId": "175919-KIN2025-KIN24SWk-Weekday-005_2025-09-24_722_0_19:34:00",
+    "directionOfLine": {
+      "lineNumber": "722",
+      "destinationName": "Hobart City",
+      "direction": 0,
+      "lineIdentifier": { "shortName": "722", "type": "3" }
+    },
+    "lastStopName": "1042 Lyell Hwy"
+  },
+  {
+    "vehicleId": "51-ODL-2100",
+    "tripId": "175923-KIN2025-KIN24SWk-Weekday-005_2025-09-24_722_1_21:00:00",
+    "directionOfLine": {
+      "lineNumber": "722",
+      "destinationName": "New Norfolk",
+      "direction": 1,
+      "lineIdentifier": { "shortName": "722", "type": "3" }
+    },
+    "lastStopName": null
+  },
+  {
+    "vehicleId": "MET862",
+    "tripId": "179680-MTS2025-MTS25SWk-Weekday-020_2025-09-24_427_1_19:10:00",
+    "directionOfLine": {
+      "lineNumber": "427",
+      "destinationName": "Blackmans Bay",
+      "direction": 1,
+      "lineIdentifier": { "shortName": "427", "type": "3" }
+    },
+    "lastStopName": "104 Roslyn Av"
+  },
+  {
+    "vehicleId": "MET867",
+    "tripId": "180486-MTS2025-MTS25SWk-Weekday-020_2025-09-24_540_0_19:40:00",
+    "directionOfLine": {
+      "lineNumber": "540",
+      "destinationName": "Hobart City",
+      "direction": 0,
+      "lineIdentifier": { "shortName": "540", "type": "3" }
+    },
+    "lastStopName": null
+  },
+  {
+    "vehicleId": "MET859",
+    "tripId": "180709-MTS2025-MTS25SWk-Weekday-020_2025-09-24_412_1_20:05:00",
+    "directionOfLine": {
+      "lineNumber": "412",
+      "destinationName": "Margate",
+      "direction": 1,
+      "lineIdentifier": { "shortName": "412", "type": "3" }
+    },
+    "lastStopName": "Hobart Interchange, Macquarie St, Stop D1"
+  },
+  {
+    "vehicleId": "MET896",
+    "tripId": "180918-MTS2025-MTS25SWk-Weekday-020-1111000_2025-09-24_625_0_19:43:00",
+    "directionOfLine": {
+      "lineNumber": "625",
+      "destinationName": "Hobart City",
+      "direction": 0,
+      "lineIdentifier": { "shortName": "625", "type": "3" }
+    },
+    "lastStopName": "Clarence St after Douglas St"
+  },
+  {
+    "vehicleId": "1503-TRC-1810",
+    "tripId": "184233-KIN2025-KIN24NWk-Weekday-016_2025-09-24_702_0_18:10:00",
+    "directionOfLine": {
+      "lineNumber": "702",
+      "destinationName": "Hobart City",
+      "direction": 0,
+      "lineIdentifier": { "shortName": "702", "type": "3" }
+    },
+    "lastStopName": "Midland Hwy after Black Brush Rd"
+  },
+  {
+    "vehicleId": "MET302",
+    "tripId": "180273-MTS2025-MTS25SWk-Weekday-020_2025-09-24_510_0_18:51:00",
+    "directionOfLine": {
+      "lineNumber": "510",
+      "destinationName": "Glenorchy Mall",
+      "direction": 0,
+      "lineIdentifier": { "shortName": "510", "type": "3" }
+    },
+    "lastStopName": "Springfield Interchange, Main Rd, Stop B"
+  },
+  {
+    "vehicleId": "46-ODL-2000",
+    "tripId": "175922-KIN2025-KIN24SWk-Weekday-005_2025-09-24_722_1_20:00:00",
+    "directionOfLine": {
+      "lineNumber": "722",
+      "destinationName": "New Norfolk",
+      "direction": 1,
+      "lineIdentifier": { "shortName": "722", "type": "3" }
+    },
+    "lastStopName": "Elizabeth St before Warwick St"
+  },
+  {
+    "vehicleId": "MET910",
+    "tripId": "180553-MTS2025-MTS25SWk-Weekday-020_2025-09-24_449_0_19:50:00",
+    "directionOfLine": {
+      "lineNumber": "449",
+      "destinationName": "Hobart City",
+      "direction": 0,
+      "lineIdentifier": { "shortName": "449", "type": "3" }
+    },
+    "lastStopName": "Strickland Av opp Smithurst Av"
+  }
+]

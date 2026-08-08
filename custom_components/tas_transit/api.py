@@ -7,10 +7,14 @@ from datetime import datetime
 from typing import Any
 
 import aiohttp
-import async_timeout
 
-from .const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_TIMEOUT
-from .exceptions import TasTransitApiException
+try:
+    from .const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_STOPSCHEDULE, API_SHAPES, API_TRIPS, API_TIMEOUT
+    from .exceptions import TasTransitApiException
+except ImportError:
+    # For standalone testing
+    from const import API_BASE_URL, API_STOPS_SEARCH, API_STOPDISPLAYS, API_STOPSCHEDULE, API_SHAPES, API_TRIPS, API_TIMEOUT
+    from exceptions import TasTransitApiException
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,7 +55,7 @@ class TasTransitApi:
         
         try:
             session = await self._get_session()
-            async with async_timeout.timeout(API_TIMEOUT):
+            async with asyncio.timeout(API_TIMEOUT):
                 async with session.get(stop_url) as response:
                     response.raise_for_status()
                     data = await response.json()
@@ -85,7 +89,7 @@ class TasTransitApi:
 
         try:
             session = await self._get_session()
-            async with async_timeout.timeout(API_TIMEOUT):
+            async with asyncio.timeout(API_TIMEOUT):
                 async with session.get(API_STOPS_SEARCH, params=params) as response:
                     response.raise_for_status()
                     data = await response.json()
@@ -110,7 +114,7 @@ class TasTransitApi:
         
         try:
             session = await self._get_session()
-            async with async_timeout.timeout(API_TIMEOUT):
+            async with asyncio.timeout(API_TIMEOUT):
                 async with session.get(departure_url) as response:
                     response.raise_for_status()
                     data = await response.json()
@@ -197,3 +201,100 @@ class TasTransitApi:
         except Exception as err:
             _LOGGER.warning("Error parsing time value '%s': %s", time_value, err)
             return None
+
+    async def get_stop_schedule(self, stop_id: str) -> dict[str, Any] | None:
+        """Get full day schedule for a stop to extract filter options.
+        
+        Args:
+            stop_id: The stop ID to fetch schedule for
+            
+        Returns:
+            Full schedule data or None if request fails
+        """
+        schedule_url = f"{API_STOPSCHEDULE}/{stop_id}"
+        _LOGGER.debug("Fetching stop schedule from: %s", schedule_url)
+        
+        try:
+            session = await self._get_session()
+            async with asyncio.timeout(API_TIMEOUT):
+                async with session.get(schedule_url) as response:
+                    response.raise_for_status()
+                    data = await response.json()
+                    
+                    _LOGGER.debug("Received schedule data for stop %s", stop_id)
+                    return data
+                    
+        except asyncio.TimeoutError as err:
+            _LOGGER.error("Timeout fetching schedule for stop %s: %s", stop_id, err)
+            raise TasTransitApiTimeoutError(f"Timeout fetching schedule for stop {stop_id}") from err
+        except aiohttp.ClientError as err:
+            _LOGGER.error("HTTP error fetching schedule for stop %s: %s", stop_id, err)
+            raise TasTransitApiConnectionError(f"Connection error fetching schedule for stop {stop_id}") from err
+        except Exception as err:
+            _LOGGER.error("Unexpected error fetching schedule for stop %s: %s", stop_id, err)
+            raise TasTransitApiError(f"Error fetching schedule for stop {stop_id}") from err
+
+    async def get_active_trips(self) -> list[dict[str, Any]]:
+        """Get list of active trips with real-time tracking.
+
+        Returns:
+            List of active trip data or empty list if request fails
+        """
+        _LOGGER.debug("Fetching active trips from: %s", API_TRIPS)
+
+        try:
+            session = await self._get_session()
+            async with asyncio.timeout(API_TIMEOUT):
+                async with session.get(API_TRIPS) as response:
+                    response.raise_for_status()
+                    data = await response.json()
+
+                    if isinstance(data, list):
+                        _LOGGER.debug("Received %d active trips", len(data))
+                        return data
+                    else:
+                        _LOGGER.warning("Unexpected trips API response format: %s", type(data))
+                        return []
+
+        except asyncio.TimeoutError as err:
+            _LOGGER.error("Timeout fetching active trips: %s", err)
+            raise TasTransitApiTimeoutError("Timeout fetching active trips") from err
+        except aiohttp.ClientError as err:
+            _LOGGER.error("HTTP error fetching active trips: %s", err)
+            raise TasTransitApiConnectionError(f"Connection error fetching active trips") from err
+        except Exception as err:
+            _LOGGER.error("Unexpected error fetching active trips: %s", err)
+            raise TasTransitApiError(f"Error fetching active trips") from err
+
+    async def get_shapes(self, trip_id: str) -> dict[str, Any] | None:
+        """Get route shapes data from the shapes endpoint.
+
+        Args:
+            trip_id: Trip ID to get shapes for (required).
+
+        Returns:
+            Route shapes data with links between stops or None if request fails
+        """
+        params = {"tripId": trip_id}
+
+        _LOGGER.debug("Fetching shapes data from: %s with params: %s", API_SHAPES, params)
+
+        try:
+            session = await self._get_session()
+            async with asyncio.timeout(API_TIMEOUT):
+                async with session.get(API_SHAPES, params=params) as response:
+                    response.raise_for_status()
+                    data = await response.json()
+
+                    _LOGGER.debug("Received shapes data with %d links", len(data.get("links", [])))
+                    return data
+
+        except asyncio.TimeoutError as err:
+            _LOGGER.error("Timeout fetching shapes data: %s", err)
+            raise TasTransitApiTimeoutError("Timeout fetching shapes data") from err
+        except aiohttp.ClientError as err:
+            _LOGGER.error("HTTP error fetching shapes data: %s", err)
+            raise TasTransitApiConnectionError(f"Connection error fetching shapes data") from err
+        except Exception as err:
+            _LOGGER.error("Unexpected error fetching shapes data: %s", err)
+            raise TasTransitApiError(f"Error fetching shapes data") from err

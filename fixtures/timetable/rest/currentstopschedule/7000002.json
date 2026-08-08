@@ -1,0 +1,994 @@
+{
+  "departureTimes": {
+    "2025-08-20T06:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755673020000
+      }
+    ],
+    "2025-08-20T07:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755673380000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755674100000,
+        "departureTime": 1755674100000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755674760000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755675180000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755675660000,
+        "departureTime": 1755675660000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755676260000,
+        "departureTime": 1755676260000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755676380000
+      }
+    ],
+    "2025-08-20T08:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755676980000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "458",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "458", "type": "3" }
+        },
+        "departureTime": 1755677940000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755678180000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755678780000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755679980000,
+        "departureTime": 1755679980000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755680100000
+      }
+    ],
+    "2025-08-20T09:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755680580000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755681240000,
+        "departureTime": 1755681240000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755681780000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755682380000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "458",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "458", "type": "3" }
+        },
+        "departureTime": 1755682920000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755682980000,
+        "departureTime": 1755682980000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755683580000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755683580000,
+        "departureTime": 1755683580000
+      }
+    ],
+    "2025-08-20T10:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755684180000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755684780000,
+        "departureTime": 1755684780000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755685380000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755685380000,
+        "departureTime": 1755685380000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755685980000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "458",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "458", "type": "3" }
+        },
+        "departureTime": 1755686520000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755686580000,
+        "departureTime": 1755686580000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755687180000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755687180000,
+        "departureTime": 1755687180000
+      }
+    ],
+    "2025-08-20T11:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755687780000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755688980000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755688980000,
+        "departureTime": 1755688980000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755689580000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "458",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "458", "type": "3" }
+        },
+        "departureTime": 1755690120000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755690180000,
+        "departureTime": 1755690180000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755690780000
+      }
+    ],
+    "2025-08-20T12:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755691380000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755691980000,
+        "departureTime": 1755691980000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755692580000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755692580000,
+        "departureTime": 1755692580000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755693180000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "458",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "458", "type": "3" }
+        },
+        "departureTime": 1755693720000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755694380000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755694380000,
+        "departureTime": 1755694380000
+      }
+    ],
+    "2025-08-20T13:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755694980000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755695580000,
+        "departureTime": 1755695580000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755696180000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755696180000,
+        "departureTime": 1755696180000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755696780000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "458",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "458", "type": "3" }
+        },
+        "departureTime": 1755697320000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755697380000,
+        "departureTime": 1755697380000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755697920000,
+        "departureTime": 1755697920000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755697980000
+      }
+    ],
+    "2025-08-20T14:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755698580000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755699180000,
+        "departureTime": 1755699180000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755699780000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755700380000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "458",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "458", "type": "3" }
+        },
+        "departureTime": 1755700920000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755700980000,
+        "departureTime": 1755700980000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755701580000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755701580000,
+        "departureTime": 1755701580000
+      }
+    ],
+    "2025-08-20T15:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755702180000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755702780000,
+        "departureTime": 1755702780000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755703200000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "X58",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "X58", "type": "3" }
+        },
+        "departureTime": 1755703200000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755703980000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755704580000,
+        "departureTime": 1755704580000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755705180000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755705180000,
+        "departureTime": 1755705180000
+      }
+    ],
+    "2025-08-20T16:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755705780000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755706380000,
+        "departureTime": 1755706380000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "458",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "458", "type": "3" }
+        },
+        "departureTime": 1755706500000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755706980000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755707040000,
+        "departureTime": 1755707040000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755707580000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755708180000,
+        "departureTime": 1755708180000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "X58",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "X58", "type": "3" }
+        },
+        "departureTime": 1755708300000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755708780000
+      }
+    ],
+    "2025-08-20T17:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755709380000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755709980000,
+        "departureTime": 1755709980000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "458",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "458", "type": "3" }
+        },
+        "departureTime": 1755710100000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755710400000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755710580000,
+        "departureTime": 1755710580000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755711180000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755711780000,
+        "departureTime": 1755711780000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "458",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "458", "type": "3" }
+        },
+        "departureTime": 1755711900000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755712380000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755712380000,
+        "departureTime": 1755712380000
+      }
+    ],
+    "2025-08-20T18:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755712980000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "457",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "457", "type": "3" }
+        },
+        "departureTime": 1755713520000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755713880000,
+        "departureTime": 1755713880000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "501",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "501", "type": "3" }
+        },
+        "arrivalTime": 1755714120000,
+        "departureTime": 1755714120000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755715200000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "601",
+          "destinationName": "University",
+          "direction": 0,
+          "lineIdentifier": { "shortName": "601", "type": "3" }
+        },
+        "arrivalTime": 1755715860000,
+        "departureTime": 1755715860000
+      }
+    ],
+    "2025-08-20T19:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "457",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "457", "type": "3" }
+        },
+        "departureTime": 1755717120000
+      }
+    ],
+    "2025-08-20T20:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755722400000
+      }
+    ],
+    "2025-08-20T21:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "457",
+          "destinationName": "Mount Nelson",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "457", "type": "3" }
+        },
+        "departureTime": 1755724320000
+      },
+      {
+        "directionOfLine": {
+          "lineNumber": "402",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "402", "type": "3" }
+        },
+        "departureTime": 1755726000000
+      }
+    ],
+    "2025-08-20T22:00": [
+      {
+        "directionOfLine": {
+          "lineNumber": "401",
+          "destinationName": "Lower Sandy Bay",
+          "direction": 1,
+          "lineIdentifier": { "shortName": "401", "type": "3" }
+        },
+        "departureTime": 1755729600000
+      }
+    ]
+  },
+  "stop": {
+    "id": "7000002",
+    "name": "Hobart Interchange, Elizabeth St, Stop D3",
+    "code": "7000002",
+    "location": { "latitude": -42.882868, "longitude": 147.330441 },
+    "zone": "",
+    "platformCode": "D3",
+    "parentStation": "place_inthob",
+    "station": false
+  },
+  "operatingDate": "2025-08-20"
+}

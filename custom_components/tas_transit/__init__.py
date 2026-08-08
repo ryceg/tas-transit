@@ -9,7 +9,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import DOMAIN, UPDATE_INTERVAL_DEFAULT
+from .const import CONF_STOP_ID, CONF_STOPS, DOMAIN, UPDATE_INTERVAL_DEFAULT
 from .coordinator import TasTransitDataUpdateCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -17,8 +17,27 @@ _LOGGER = logging.getLogger(__name__)
 PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.DEVICE_TRACKER]
 
 
+def _migrate_entry_data(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Flatten stops-list config entry data back to the flat single-stop format."""
+    if CONF_STOP_ID in entry.data or CONF_STOPS not in entry.data:
+        return
+
+    stops = entry.data[CONF_STOPS]
+    if not stops:
+        return
+
+    _LOGGER.info(
+        "Migrating tas_transit config entry %s from stops-list to flat format",
+        entry.entry_id,
+    )
+    data = {k: v for k, v in entry.data.items() if k != CONF_STOPS}
+    data.update(stops[0])
+    hass.config_entries.async_update_entry(entry, data=data)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Tasmanian Transport from a config entry."""
+    _migrate_entry_data(hass, entry)
     hass.data.setdefault(DOMAIN, {})
 
     coordinator = TasTransitDataUpdateCoordinator(

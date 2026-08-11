@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.components.device_tracker import SourceType, TrackerEntity
@@ -16,6 +17,10 @@ from .coordinator import TasTransitDataUpdateCoordinator
 from .vehicle import Vehicle
 
 _LOGGER = logging.getLogger(__name__)
+
+# A vehicle broadcasting position sends updates every few seconds; if we
+# haven't heard from it in this long, its marker is a frozen ghost — hide it.
+STALE_VEHICLE_THRESHOLD = timedelta(seconds=180)
 
 
 async def async_setup_entry(
@@ -151,12 +156,13 @@ class TasTransitVehicleTracker(CoordinatorEntity, TrackerEntity):
 
     @property
     def available(self) -> bool:
-        """Return if the vehicle is available (active and has location)."""
+        """Return if the vehicle is available (active, has location, and fresh)."""
         vehicle = self._get_vehicle()
         return (
             vehicle is not None
             and vehicle.is_active
             and vehicle.location is not None
+            and datetime.now() - vehicle.last_updated < STALE_VEHICLE_THRESHOLD
         )
 
     @property

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity
@@ -16,6 +16,9 @@ from .coordinator import TasTransitDataUpdateCoordinator
 from .vehicle import Vehicle
 
 _LOGGER = logging.getLogger(__name__)
+
+# Mirror of device_tracker staleness — hide sensors for vehicles we've lost.
+STALE_VEHICLE_THRESHOLD = timedelta(seconds=180)
 
 
 class TasTransitVehicleSensorBase(CoordinatorEntity, SensorEntity):
@@ -52,7 +55,11 @@ class TasTransitVehicleSensorBase(CoordinatorEntity, SensorEntity):
     def available(self) -> bool:
         """Return if the vehicle sensor is available."""
         vehicle = self.vehicle
-        return vehicle is not None and vehicle.is_active
+        return (
+            vehicle is not None
+            and vehicle.is_active
+            and datetime.now() - vehicle.last_updated < STALE_VEHICLE_THRESHOLD
+        )
 
 
 class TasTransitVehicleLineNumberSensor(TasTransitVehicleSensorBase):

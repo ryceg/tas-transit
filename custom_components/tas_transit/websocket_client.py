@@ -16,9 +16,9 @@ _LOGGER = logging.getLogger(__name__)
 WEBSOCKET_URL = "wss://real-time.transport.tas.gov.au/timetable/websocket/all?map"
 
 # Reconnection settings
-MAX_RECONNECT_ATTEMPTS = 5
 RECONNECT_DELAY_BASE = 5  # seconds
 MAX_RECONNECT_DELAY = 300  # 5 minutes
+MAX_BACKOFF_EXPONENT = 6  # cap 2**n growth so the delay math can't overflow
 
 
 class VehicleMessageType(Enum):
@@ -262,16 +262,39 @@ class TasTransitWebSocketClient:
         except Exception as err:
             _LOGGER.error("Error handling WebSocket message: %s", err)
 
-    async def _handle_reconnection(self) -> None:
-        """Handle automatic reconnection with exponential backoff."""
-        while self._running and self._state != WebSocketState.CONNECTED:
-            if self._reconnect_attempts >= MAX_RECONNECT_ATTEMPTS:
-                _LOGGER.error("Maximum reconnection attempts reached, giving up")
-                self._state = WebSocketState.FAILED
-                break
+    async def ensure_connected(self) -> None:
+        """Watchdog: restart the connection if it has died with no active reconnect task.
 
+        Called periodically (from the coordinator poll) so a dead socket can't
+        silently kill realtime updates until the next Home Assistant restart.
+        """
+        if not self._running:
+            return
+        if self.is_connected or self._state == WebSocketState.CONNECTING:
+            return
+        if self._reconnect_task and not self._reconnect_task.done():
+            return
+
+        _LOGGER.warning(
+            "WebSocket not connected (state=%s) and no reconnect in progress — restarting connection",
+            self._state.value,
+        )
+        self._reconnect_attempts = 0
+        self._state = WebSocketState.RECONNECTING
+        self._reconnect_task = asyncio.create_task(self._handle_reconnection())
+
+    async def _handle_reconnection(self) -> None:
+        """Handle automatic reconnection with exponential backoff.
+
+        Retries forever (with capped backoff) — giving up permanently would
+        leave the integration dead until a core restart.
+        """
+        while self._running and self._state != WebSocketState.CONNECTED:
             # Calculate delay with exponential backoff
-            delay = min(RECONNECT_DELAY_BASE * (2 ** self._reconnect_attempts), MAX_RECONNECT_DELAY)
+            delay = min(
+                RECONNECT_DELAY_BASE * (2 ** min(self._reconnect_attempts, MAX_BACKOFF_EXPONENT)),
+                MAX_RECONNECT_DELAY,
+            )
             self._reconnect_attempts += 1
             
             _LOGGER.info("Attempting reconnection #%d in %d seconds", 

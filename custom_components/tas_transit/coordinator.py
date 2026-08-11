@@ -76,6 +76,9 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
             # Start WebSocket client if not already started
             if not self._websocket_started:
                 await self._start_websocket_client()
+            else:
+                # Watchdog: revive the WebSocket if it has died
+                await self.websocket_client.ensure_connected()
 
             stop_id = self.config_entry.data[CONF_STOP_ID]
             _LOGGER.debug("Fetching departures for stop %s", stop_id)
@@ -164,7 +167,7 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
             if should_include:
                 filtered_departures.append(departure)
 
-        _LOGGER.debug("Filtered %%d departures down to %%d", original_count, len(filtered_departures))
+        _LOGGER.debug("Filtered %d departures down to %d", original_count, len(filtered_departures))
         return filtered_departures
 
     def _matches_line_filter(self, line_number: str, line_filters: list[str]) -> bool:
@@ -402,8 +405,19 @@ class TasTransitDataUpdateCoordinator(DataUpdateCoordinator):
 
         vehicle = self.vehicle_manager.update_vehicle(vehicle_data)
         if vehicle:
-            # Trigger coordinator update to notify entities
-            self.async_set_updated_data(self.data)
+            # Notify entities directly. Do NOT use async_set_updated_data here —
+            # it resets the coordinator's poll timer, so frequent WebSocket
+            # traffic starves the API poll (stale departures, no entity churn).
+            self.async_update_listeners()
+
+            # Create entities for newly-seen vehicles immediately instead of
+            # waiting for the next API poll (which may be minutes away).
+            if vehicle.is_active and (
+                vehicle.vehicle_id not in self._tracked_vehicle_entities
+                or vehicle.vehicle_id not in self._tracked_vehicle_sensors
+            ):
+                self.hass.async_create_task(self._update_vehicle_entities())
+
             _LOGGER.debug("Updated vehicle %s from WebSocket", vehicle.vehicle_id)
 
     def _get_vehicles_for_stop(self, stop_id: str, departures: list[dict[str, Any]]) -> list[dict[str, Any]]:

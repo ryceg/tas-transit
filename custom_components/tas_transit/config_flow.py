@@ -279,19 +279,28 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
         """Return the options flow."""
-        return OptionsFlow(config_entry)
+        return OptionsFlow()
 
 
 class OptionsFlow(config_entries.OptionsFlow):
     """Handle an options flow for Tasmanian Transport."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        """Initialize options flow."""
-        self.config_entry = config_entry
-        self._stop_id: str = self.config_entry.data[CONF_STOP_ID]
-        self._stop_name: str = self.config_entry.data[CONF_STOP_NAME]
+    def __init__(self) -> None:
+        """Initialize options flow.
+
+        self.config_entry is provided (read-only) by the base class, and is
+        not available yet at construction time — resolve stop details lazily.
+        """
         self._available_routes: list[str] = []
         self._available_destinations: list[str] = []
+
+    @property
+    def _stop_id(self) -> str:
+        return self.config_entry.data[CONF_STOP_ID]
+
+    @property
+    def _stop_name(self) -> str:
+        return self.config_entry.data[CONF_STOP_NAME]
 
     def _extract_filter_options(self, schedule_data: dict[str, Any]) -> None:
         """Extract available route numbers and destinations from stopschedule data."""
